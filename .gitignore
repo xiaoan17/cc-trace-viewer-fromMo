@@ -11,3 +11,9 @@ dist-ssr
 !.vscode/extensions.json
 .idea
 .DS_Store
+
+# Never commit local secrets or trace data
+.env
+.env.*
+*.jsonl
+*.json.bak
