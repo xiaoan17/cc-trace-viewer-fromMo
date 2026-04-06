@@ -1,0 +1,48 @@
+# Trace Viewer
+
+A web-based viewer for browsing and comparing conversation traces from multiple coding agents: **Claude Code**, **Codex**, and **Gemini CLI**.
+
+![screenshot placeholder](./docs/screenshot.png)
+
+## Features
+
+- Browse sessions from all three agents in a unified interface
+- Filter by source (Claude / Codex / Gemini) and search by project path
+- Timeline view of each session: user messages, tool calls, tool results, thinking steps, and assistant responses
+- Full markdown rendering in message content
+- Token usage display per turn (where available)
+- Fast session list loading via lightweight metadata scan
+
+## Supported Sources
+
+| Source | Trace Location | Format |
+|--------|---------------|--------|
+| Claude Code | `~/.claude/projects/**/*.jsonl` | JSONL, `parentUuid` linked list |
+| Codex | `~/.codex/sessions/**/*.jsonl` | JSONL, event stream |
+| Gemini CLI | `~/.gemini/tmp/**/chats/*.json` | Single JSON file |
+
+## Getting Started
+
+```bash
+npm install
+npm run dev
+```
+
+Open [http://localhost:5173](http://localhost:5173).
+
+The API server runs on port 3001; the Vite dev server proxies `/api` requests to it automatically.
+
+## Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start both API server and Vite dev server |
+| `npm run server:dev` | Start only the API server with hot-reload |
+| `npm run build` | Type-check and build for production |
+| `npm run preview` | Preview the production build |
+
+## Tech Stack
+
+- **Frontend**: React 18 + TypeScript + Vite + Tailwind CSS
+- **Backend**: Express.js (Node) — reads trace files directly from the filesystem, no database
+- **Markdown**: react-markdown + remark-gfm
