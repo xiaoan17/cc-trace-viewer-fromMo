@@ -69,10 +69,12 @@ describe('parseGeminiSession', () => {
     expect(toolUse).toBeDefined()
     expect(toolUse!.name).toBe('read_file')
     expect(toolUse!.input).toEqual({ file_path: 'README.md' })
+    expect(toolUse!.callId).toBe('tc1')
 
     const toolResult = turn.steps.find(s => s.type === 'tool_result')
     expect(toolResult).toBeDefined()
     expect(toolResult!.output).toBe('# Hello')
+    expect(toolResult!.callId).toBe('tc1')
   })
 
   it('extracts thoughts with subject/description format as thinking steps', () => {

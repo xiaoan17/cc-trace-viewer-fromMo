@@ -44,6 +44,14 @@ function toolResultMsg(uuid: string, parentUuid: string, toolUseId: string, outp
   return userMsg(uuid, parentUuid, [{ type: 'tool_result', tool_use_id: toolUseId, content: output }])
 }
 
+function systemMsg(uuid: string, parentUuid: string, subtype: string, extra: object = {}) {
+  return { type: 'system', uuid, parentUuid, subtype, ...extra }
+}
+
+function queueOperationMsg(uuid: string, parentUuid: string, content: string, operation = 'enqueue') {
+  return { type: 'queue-operation', uuid, parentUuid, operation, content }
+}
+
 // ── readClaudeMeta ────────────────────────────────────────────────────────────
 
 describe('readClaudeMeta', () => {
@@ -108,6 +116,10 @@ describe('parseClaudeSession', () => {
     expect(t1.steps.some(s => s.type === 'tool_use' && s.name === 'Bash')).toBe(true)
     expect(t1.steps.some(s => s.type === 'tool_result')).toBe(true)
     expect(t1.assistantMessage).toBe('There are two files.')
+    const toolUse = t1.steps.find(s => s.type === 'tool_use')
+    const toolResult = t1.steps.find(s => s.type === 'tool_result')
+    expect(toolUse!.callId).toBe('tc1')
+    expect(toolResult!.callId).toBe('tc1')
 
     const t2 = session!.turns[1]
     expect(t2.userMessage).toBe('Thanks')
@@ -124,6 +136,86 @@ describe('parseClaudeSession', () => {
     const session = await parseClaudeSession(f)
     expect(session!.turns).toHaveLength(1)
     expect(session!.turns[0].userMessage).toBe('Real user message')
+  })
+
+  it('collects sibling tool branches in a single Claude turn', async () => {
+    const f = tmp([
+      baseRecord(),
+      userMsg('u1', 'root', 'Inspect project'),
+      assistantMsg('a1', 'u1', [{ type: 'text', text: 'Checking files.' }]),
+      assistantMsg('a2', 'a1', [{ type: 'tool_use', id: 'tc1', name: 'Read', input: { file_path: 'a.ts' } }]),
+      assistantMsg('a3', 'a2', [{ type: 'tool_use', id: 'tc2', name: 'Read', input: { file_path: 'b.ts' } }]),
+      toolResultMsg('tr1', 'a2', 'tc1', 'alpha'),
+      toolResultMsg('tr2', 'a3', 'tc2', 'beta'),
+      assistantMsg('a4', 'tr2', [{ type: 'text', text: 'Done.' }]),
+    ])
+
+    const session = await parseClaudeSession(f)
+    expect(session).not.toBeNull()
+    expect(session!.turns).toHaveLength(1)
+    expect(session!.turns[0].steps.filter((step) => step.type === 'tool_use')).toHaveLength(2)
+    expect(session!.turns[0].steps.filter((step) => step.type === 'tool_result')).toHaveLength(2)
+    expect(session!.turns[0].steps.some((step) => step.type === 'tool_result' && step.output === 'alpha')).toBe(true)
+    expect(session!.turns[0].steps.some((step) => step.type === 'tool_result' && step.output === 'beta')).toBe(true)
+  })
+
+  it('keeps Claude system events as steps', async () => {
+    const f = tmp([
+      baseRecord(),
+      userMsg('u1', 'root', 'Hello'),
+      assistantMsg('a1', 'u1', [{ type: 'text', text: 'Hi' }]),
+      systemMsg('s1', 'a1', 'turn_duration', { durationMs: 1234, messageCount: 4 }),
+    ])
+
+    const session = await parseClaudeSession(f)
+    expect(session).not.toBeNull()
+    expect(session!.turns[0].steps.some((step) => step.type === 'system' && step.name === 'turn_duration')).toBe(true)
+  })
+
+  it('groups local command output into the triggering command turn', async () => {
+    const f = tmp([
+      baseRecord(),
+      userMsg('meta1', 'root', '<local-command-caveat>Caveat</local-command-caveat>'),
+      userMsg('cmd1', 'meta1', '<command-name>/plugin</command-name><command-args>install codex</command-args>'),
+      userMsg('out1', 'cmd1', '<local-command-stdout>Installed codex</local-command-stdout>'),
+      userMsg('meta2', 'out1', '<local-command-caveat>Caveat</local-command-caveat>'),
+      userMsg('err1', 'meta2', 'Unknown skill: codex:setup'),
+    ])
+
+    const session = await parseClaudeSession(f)
+    expect(session).not.toBeNull()
+    expect(session!.turns).toHaveLength(1)
+    expect(session!.turns[0].userMessage).toBe('/plugin install codex')
+    expect(session!.turns[0].steps.some((step) => step.type === 'system' && step.text === 'Installed codex')).toBe(true)
+    expect(session!.turns[0].steps.some((step) => step.type === 'system' && step.text === 'Unknown skill: codex:setup')).toBe(true)
+  })
+
+  it('keeps task notifications inside the current turn as readable task events', async () => {
+    const taskNotification = [
+      '<task-notification>',
+      '<task-id>bsz67v9fe</task-id>',
+      '<tool-use-id>call_95a71e7ed5dc4391a0fb3734</tool-use-id>',
+      '<output-file>/tmp/tasks/bsz67v9fe.output</output-file>',
+      '<status>failed</status>',
+      '<summary>Background command "Monitor progress every 30s for 5 minutes" failed with exit code 144</summary>',
+      '</task-notification>',
+    ].join('')
+    const f = tmp([
+      baseRecord(),
+      userMsg('u1', 'root', 'Run the monitor'),
+      assistantMsg('a1', 'u1', [{ type: 'tool_use', id: 'call_95a71e7ed5dc4391a0fb3734', name: 'Task', input: { description: 'Monitor progress every 30s for 5 minutes' } }]),
+      userMsg('task1', 'a1', taskNotification),
+      queueOperationMsg('q1', 'task1', taskNotification),
+      assistantMsg('a2', 'q1', [{ type: 'text', text: 'The background task failed.' }]),
+    ])
+
+    const session = await parseClaudeSession(f)
+    expect(session).not.toBeNull()
+    expect(session!.turns).toHaveLength(1)
+    expect(session!.turns[0].userMessage).toBe('Run the monitor')
+    expect(session!.turns[0].steps.some((step) => step.type === 'system' && step.name === 'task_failed' && step.callId === 'call_95a71e7ed5dc4391a0fb3734')).toBe(true)
+    expect(session!.turns[0].steps.some((step) => step.text?.includes('Background command "Monitor progress every 30s for 5 minutes" failed with exit code 144'))).toBe(true)
+    expect(session!.turns[0].assistantMessage).toBe('The background task failed.')
   })
 
   it('returns null for empty / sessionId-less file', async () => {

@@ -132,9 +132,11 @@ export async function parseCodexSession(filePath: string): Promise<TraceSession 
 
         // function_call: tool invocation
         if (payload.type === 'function_call' || payload.type === 'custom_tool_call') {
+          const callId = payload.call_id || `call-${steps.length}`
           steps.push({
-            id: payload.call_id || `step-${steps.length}`,
+            id: `tool-${callId}`,
             type: 'tool_use',
+            callId,
             name: payload.name,
             input:
               typeof payload.arguments === 'string'
@@ -145,9 +147,11 @@ export async function parseCodexSession(filePath: string): Promise<TraceSession 
 
         // function_call_output / custom_tool_call_output: tool result
         if (payload.type === 'function_call_output' || payload.type === 'custom_tool_call_output') {
+          const callId = payload.call_id || `call-${steps.length}`
           steps.push({
-            id: payload.call_id || `result-${steps.length}`,
+            id: `result-${callId}`,
             type: 'tool_result',
+            callId,
             output:
               typeof payload.output === 'string'
                 ? payload.output

@@ -32,7 +32,8 @@ export interface TraceTurn {
 
 export interface TraceStep {
   id: string
-  type: 'tool_use' | 'tool_result' | 'thinking' | 'text'
+  type: 'tool_use' | 'tool_result' | 'thinking' | 'text' | 'system'
+  callId?: string
   name?: string
   input?: Record<string, unknown>
   output?: string

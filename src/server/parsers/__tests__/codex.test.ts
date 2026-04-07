@@ -103,9 +103,11 @@ describe('parseCodexSession', () => {
     const toolUse = turn.steps.find(s => s.type === 'tool_use')
     expect(toolUse!.name).toBe('exec_command')
     expect(toolUse!.input).toEqual({ cmd: 'ls' })
+    expect(toolUse!.callId).toBe('call-1')
 
     const toolResult = turn.steps.find(s => s.type === 'tool_result')
     expect(toolResult!.output).toBe('file1.ts\nfile2.ts')
+    expect(toolResult!.callId).toBe('call-1')
 
     expect(turn.tokenUsage).toEqual({ input: 100, output: 50, cached: 10, total: 150 })
   })

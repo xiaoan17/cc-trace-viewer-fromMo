@@ -51,9 +51,11 @@ export function parseGeminiSession(filePath: string): TraceSession | null {
 
           // Tool calls
           for (const tc of resp.toolCalls || []) {
+            const callId = tc.id || `tool-${steps.length}`
             steps.push({
-              id: tc.id,
+              id: `tool-${callId}`,
               type: 'tool_use',
+              callId,
               name: tc.name,
               input: tc.args,
             })
@@ -73,8 +75,9 @@ export function parseGeminiSession(filePath: string): TraceSession | null {
 
               if (outputs) {
                 steps.push({
-                  id: `${tc.id}-result`,
+                  id: `result-${callId}`,
                   type: 'tool_result',
+                  callId,
                   output: outputs,
                 })
               }
