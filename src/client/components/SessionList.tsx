@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useSessions } from '../hooks/useSessions'
 import { getSourceConfig } from './SourceBadge'
+import { SourceIcon } from './SourceIcon'
 import type { SessionMeta, Source } from '@shared/types'
 
 const SOURCES: Source[] = ['claude', 'codex', 'gemini']
@@ -126,7 +127,10 @@ export function SessionList({ selected, onSelect }: {
                 color={src === s ? c.color : undefined}
                 onClick={() => setSrc(src === s ? 'all' : s)}
               >
-                {c.icon} {counts[s] || 0}
+                <span className="inline-flex items-center gap-1.5">
+                  <SourceIcon source={s} className="h-3.5 w-3.5 flex-shrink-0" />
+                  <span>{counts[s] || 0}</span>
+                </span>
               </TabBtn>
             )
           })}
@@ -162,10 +166,11 @@ export function SessionList({ selected, onSelect }: {
                 }}
               >
                 <span
-                  className="text-[10px] font-bold uppercase tracking-widest"
+                  className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest"
                   style={{ color: c.color }}
                 >
-                  {c.icon} {c.label}
+                  <SourceIcon source={source} className="h-3.5 w-3.5 flex-shrink-0" />
+                  <span>{c.label}</span>
                 </span>
                 <span className="text-[10px]" style={{ color: 'var(--text-4)' }}>{items.length}</span>
               </div>
@@ -207,11 +212,12 @@ function SessionRow({ meta, active, onClick }: {
   meta: SessionMeta; active: boolean; onClick: () => void
 }) {
   const c = getSourceConfig(meta.source)
+  const shortId = meta.id.replace(/-/g, '').slice(0, 8)
 
   return (
     <button
       onClick={onClick}
-      className="w-full text-left px-5 py-3 flex items-start gap-3 relative transition-all"
+      className="w-full text-left px-4 py-3 flex items-center gap-3 relative transition-all"
       style={{
         background: active ? 'var(--bg-3)' : 'transparent',
         borderBottom: '1px solid var(--border-1)',
@@ -227,40 +233,55 @@ function SessionRow({ meta, active, onClick }: {
         />
       )}
 
-      {/* Dot */}
+      {/* Avatar */}
       <div
-        className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0 transition-all"
+        className="w-9 h-9 rounded-xl flex-shrink-0 flex items-center justify-center transition-all"
         style={{
-          background: active ? c.color : 'var(--bg-4)',
-          border: `1.5px solid ${active ? c.color : 'var(--border-2)'}`,
-          boxShadow: active ? `0 0 6px ${c.glow}` : 'none',
+          background: active ? c.color + '22' : 'var(--bg-3)',
+          border: `1.5px solid ${active ? c.color + '66' : 'var(--border-2)'}`,
+          boxShadow: active ? `0 0 10px ${c.glow}` : 'none',
         }}
-      />
+      >
+        <SourceIcon source={meta.source} className="h-5 w-5" />
+      </div>
 
+      {/* Content */}
       <div className="flex-1 min-w-0">
-        {/* Path */}
-        <div
-          className="text-xs font-mono truncate mb-1 leading-tight"
-          style={{ color: active ? 'var(--text-1)' : 'var(--text-2)' }}
-        >
-          {shortPath(meta.cwd)}
+        {/* Top row: path + time */}
+        <div className="flex items-baseline justify-between gap-2 mb-0.5">
+          <div
+            className="text-xs font-mono truncate leading-tight"
+            style={{ color: active ? 'var(--text-1)' : 'var(--text-2)' }}
+          >
+            {shortPath(meta.cwd)}
+          </div>
+          <span className="text-[10px] flex-shrink-0" style={{ color: 'var(--text-4)' }}>
+            {timeAgo(meta.startedAt)}
+          </span>
         </div>
-        {/* Meta row */}
+        {/* Bottom row: session ID + turns */}
         <div className="flex items-center gap-2">
-          <span className="text-[10px] font-medium" style={{ color: active ? c.color : 'var(--text-4)' }}>
+          <span
+            className="text-[10px] font-mono px-1.5 py-0.5 rounded"
+            style={{
+              background: active ? c.color + '18' : 'var(--bg-2)',
+              color: active ? c.color : 'var(--text-4)',
+              border: `1px solid ${active ? c.color + '33' : 'var(--border-1)'}`,
+            }}
+          >
+            #{shortId}
+          </span>
+          <span className="text-[10px]" style={{ color: 'var(--text-4)' }}>
             {meta.turnCount} turns
           </span>
           {meta.model && (
             <>
               <span style={{ color: 'var(--border-2)' }}>·</span>
-              <span className="text-[10px] truncate" style={{ color: 'var(--text-4)', maxWidth: '90px' }}>
-                {meta.model.split('/').pop()?.split(':')[0]?.slice(0, 18)}
+              <span className="text-[10px] truncate" style={{ color: 'var(--text-4)', maxWidth: '70px' }}>
+                {meta.model.split('/').pop()?.split(':')[0]?.slice(0, 16)}
               </span>
             </>
           )}
-          <span className="ml-auto text-[10px] flex-shrink-0" style={{ color: 'var(--text-4)' }}>
-            {timeAgo(meta.startedAt)}
-          </span>
         </div>
       </div>
     </button>

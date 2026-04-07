@@ -1,4 +1,5 @@
 import type { Source } from '@shared/types'
+import { SourceIcon } from './SourceIcon'
 
 export interface SourceConfig {
   label: string
@@ -7,18 +8,16 @@ export interface SourceConfig {
   badgeBg: string
   badgeBorder: string
   glow: string
-  icon: string
 }
 
 const CONFIGS: Record<Source, SourceConfig> = {
   claude: {
-    label: 'Claude',
+    label: 'Claude Code',
     color: '#c2410c',        // orange-700 — legible on white
     textClass: 'text-orange-700',
     badgeBg: 'rgba(234,88,12,0.08)',
     badgeBorder: 'rgba(234,88,12,0.25)',
     glow: 'rgba(234,88,12,0.12)',
-    icon: '◆',
   },
   codex: {
     label: 'Codex',
@@ -27,16 +26,14 @@ const CONFIGS: Record<Source, SourceConfig> = {
     badgeBg: 'rgba(29,78,216,0.07)',
     badgeBorder: 'rgba(29,78,216,0.2)',
     glow: 'rgba(29,78,216,0.1)',
-    icon: '⬡',
   },
   gemini: {
-    label: 'Gemini',
+    label: 'Gemini CLI',
     color: '#6d28d9',        // violet-700
     textClass: 'text-violet-700',
     badgeBg: 'rgba(109,40,217,0.07)',
     badgeBorder: 'rgba(109,40,217,0.2)',
     glow: 'rgba(109,40,217,0.1)',
-    icon: '✦',
   },
 }
 
@@ -49,7 +46,8 @@ export function SourceBadge({ source }: { source: Source }) {
       className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-0.5 text-xs font-bold"
       style={{ background: c.badgeBg, border: `1px solid ${c.badgeBorder}`, color: c.color }}
     >
-      {c.icon} {c.label}
+      <SourceIcon source={source} className="h-3.5 w-3.5 flex-shrink-0" />
+      <span>{c.label}</span>
     </span>
   )
 }

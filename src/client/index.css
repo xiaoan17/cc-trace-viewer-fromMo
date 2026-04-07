@@ -6,19 +6,56 @@
   /* ── Light (white) theme ── */
   :root {
     --bg-0: #ffffff;
-    --bg-1: #f8f9fb;
-    --bg-2: #f1f3f7;
-    --bg-3: #e8ebf1;
-    --bg-4: #dde1ea;
+    --bg-1: #f7f7f4;
+    --bg-2: #f1f1ec;
+    --bg-3: #e7e7df;
+    --bg-4: #d8d9d0;
 
-    --border-1: rgba(0,0,0,0.07);
-    --border-2: rgba(0,0,0,0.11);
-    --border-3: rgba(0,0,0,0.18);
+    --border-1: rgba(32, 35, 26, 0.08);
+    --border-2: rgba(32, 35, 26, 0.13);
+    --border-3: rgba(32, 35, 26, 0.2);
 
-    --text-1: #0f1117;
-    --text-2: #3b4455;
-    --text-3: #6b7694;
-    --text-4: #9ba5bf;
+    --text-1: #171a16;
+    --text-2: #394036;
+    --text-3: #677062;
+    --text-4: #96a08f;
+
+    --accent-user: #5b5bd6;
+    --accent-user-2: #7c72e8;
+    --accent-user-bg: rgba(91, 91, 214, 0.1);
+    --accent-user-border: rgba(91, 91, 214, 0.22);
+
+    --accent-agent: #0f8c72;
+    --accent-agent-2: #35a488;
+    --accent-agent-bg: rgba(15, 140, 114, 0.08);
+    --accent-agent-border: rgba(15, 140, 114, 0.2);
+
+    --accent-tool: #356dcc;
+    --accent-tool-bg: rgba(53, 109, 204, 0.08);
+    --accent-tool-border: rgba(53, 109, 204, 0.22);
+    --accent-tool-soft: #eaf1fb;
+    --accent-tool-text: #224d98;
+
+    --accent-thinking: #9a6a2f;
+    --accent-thinking-bg: rgba(154, 106, 47, 0.09);
+    --accent-thinking-border: rgba(154, 106, 47, 0.22);
+
+    --accent-success: #2f8a57;
+    --accent-success-bg: rgba(47, 138, 87, 0.08);
+    --accent-success-border: rgba(47, 138, 87, 0.22);
+    --accent-success-soft: #edf8f1;
+    --accent-success-text: #226540;
+
+    --accent-error: #c45a49;
+    --accent-error-bg: rgba(196, 90, 73, 0.08);
+    --accent-error-border: rgba(196, 90, 73, 0.22);
+    --accent-error-soft: #fdf0ed;
+    --accent-error-text: #964336;
+
+    --accent-system: #677487;
+    --accent-system-bg: rgba(103, 116, 135, 0.08);
+    --accent-system-border: rgba(103, 116, 135, 0.2);
+    --accent-system-soft: #f1f4f8;
   }
 
   html, body, #root { height: 100%; }
@@ -33,7 +70,7 @@
 
   * { box-sizing: border-box; }
 
-  ::selection { background: rgba(99,102,241,0.2); }
+  ::selection { background: rgba(91, 91, 214, 0.18); }
 
   ::-webkit-scrollbar { width: 4px; height: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }

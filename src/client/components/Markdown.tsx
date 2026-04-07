@@ -35,9 +35,9 @@ const components: Components = {
       <code
         className="text-sm font-mono px-1.5 py-0.5 rounded-md"
         style={{
-          background: 'rgba(2,132,199,0.08)',
-          border: '1px solid rgba(2,132,199,0.15)',
-          color: '#0369a1',
+          background: 'var(--accent-tool-bg)',
+          border: '1px solid var(--accent-tool-border)',
+          color: 'var(--accent-tool-text)',
         }}
       >
         {children}
@@ -93,8 +93,8 @@ const components: Components = {
     <blockquote
       className="my-3 pl-4 py-1"
       style={{
-        borderLeft: '3px solid rgba(99,102,241,0.4)',
-        background: 'rgba(99,102,241,0.04)',
+        borderLeft: '3px solid var(--accent-user-border)',
+        background: 'var(--accent-user-bg)',
         color: 'var(--text-2)',
         borderRadius: '0 8px 8px 0',
       }}
@@ -145,7 +145,7 @@ const components: Components = {
       target="_blank"
       rel="noreferrer"
       className="underline underline-offset-2 transition-colors hover:opacity-70"
-      style={{ color: '#0369a1' }}
+      style={{ color: 'var(--accent-tool-text)' }}
     >
       {children}
     </a>

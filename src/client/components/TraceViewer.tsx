@@ -1,6 +1,7 @@
 import { useSession } from '../hooks/useSessions'
 import { TurnCard } from './TurnCard'
 import { SourceBadge, getSourceConfig } from './SourceBadge'
+import { SourceIcon } from './SourceIcon'
 import type { SessionMeta } from '@shared/types'
 
 function shortPath(p = '') {
@@ -22,15 +23,14 @@ export function TraceViewer({ meta }: { meta: SessionMeta }) {
       >
         <div className="flex items-start gap-4">
           <div
-            className="w-11 h-11 rounded-2xl flex items-center justify-center text-xl flex-shrink-0"
+            className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
             style={{
               background: c.badgeBg,
               border: `1.5px solid ${c.badgeBorder}`,
               boxShadow: `0 2px 12px ${c.glow}`,
-              color: c.color,
             }}
           >
-            {c.icon}
+            <SourceIcon source={meta.source} className="h-6 w-6" />
           </div>
 
           <div className="flex-1 min-w-0">
@@ -80,14 +80,14 @@ export function TraceViewer({ meta }: { meta: SessionMeta }) {
         {error && (
           <div
             className="mx-7 mt-6 px-5 py-4 rounded-2xl text-sm"
-            style={{ background: 'rgba(220,38,38,0.05)', border: '1.5px solid rgba(220,38,38,0.2)', color: '#b91c1c' }}
+            style={{ background: 'var(--accent-error-bg)', border: '1.5px solid var(--accent-error-border)', color: 'var(--accent-error-text)' }}
           >
             {error}
           </div>
         )}
 
         {!loading && !error && session && (
-          <div className="max-w-3xl mx-auto px-6 pt-8 pb-16">
+          <div className="max-w-6xl mx-auto px-6 pt-8 pb-16">
             {session.turns.length === 0 ? (
               <div className="text-center py-20 text-base" style={{ color: 'var(--text-4)' }}>
                 No turns found
