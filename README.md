@@ -24,11 +24,20 @@ A web-based viewer for browsing and comparing conversation traces from multiple 
 ## Getting Started
 
 ```bash
+npm run setup
+npm start
+```
+
+Or, if you prefer the explicit two-step flow:
+
+```bash
 npm install
 npm run dev
 ```
 
 Open [http://localhost:5173](http://localhost:5173).
+
+On macOS, you can also double-click [Trace Viewer.command](/Users/koblod/workspace/workspace_js/trace-viewer2/Trace Viewer.command). It starts the local servers and opens the app in your default browser once the frontend is ready.
 
 The API server runs on port 3001; the Vite dev server proxies `/api` requests to it automatically.
 
@@ -36,6 +45,9 @@ The API server runs on port 3001; the Vite dev server proxies `/api` requests to
 
 | Command | Description |
 |---------|-------------|
+| `npm run setup` | Check local Node.js version and install dependencies |
+| `npm start` | One-command local launch; installs dependencies first if needed |
+| `./Trace Viewer.command` | macOS double-click launcher that opens the app in a browser |
 | `npm run dev` | Start both API server and Vite dev server |
 | `npm run server:dev` | Start only the API server with hot-reload |
 | `npm run build` | Type-check and build for production |

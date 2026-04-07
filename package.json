@@ -3,6 +3,8 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "setup": "bash ./scripts/setup.sh",
+    "start": "bash ./scripts/start.sh",
     "dev": "concurrently \"npm run server:dev\" \"vite\"",
     "server:dev": "nodemon --watch src/server --ext ts --exec \"tsx src/server/index.ts\"",
     "server": "tsx src/server/index.ts",
