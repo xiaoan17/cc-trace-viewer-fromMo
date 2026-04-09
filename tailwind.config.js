@@ -1,20 +1,75 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class',
   content: ['./index.html', './src/client/**/*.{ts,tsx}'],
   theme: {
     extend: {
       fontFamily: {
+        sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
         mono: ['JetBrains Mono', 'Fira Code', 'Cascadia Code', 'monospace'],
       },
       colors: {
-        orange: {
-          300: '#fdba74',
-          400: '#fb923c',
-          500: '#f97316',
+        surface: {
+          0: 'var(--bg-0)',
+          1: 'var(--bg-1)',
+          2: 'var(--bg-2)',
+          3: 'var(--bg-3)',
+          4: 'var(--bg-4)',
         },
+        text: {
+          1: 'var(--text-1)',
+          2: 'var(--text-2)',
+          3: 'var(--text-3)',
+          4: 'var(--text-4)',
+        },
+        border: {
+          1: 'var(--border-1)',
+          2: 'var(--border-2)',
+          3: 'var(--border-3)',
+        },
+        accent: {
+          user: 'var(--accent-user)',
+          'user-2': 'var(--accent-user-2)',
+          'user-bg': 'var(--accent-user-bg)',
+          'user-border': 'var(--accent-user-border)',
+          agent: 'var(--accent-agent)',
+          'agent-2': 'var(--accent-agent-2)',
+          'agent-bg': 'var(--accent-agent-bg)',
+          'agent-border': 'var(--accent-agent-border)',
+          tool: 'var(--accent-tool)',
+          'tool-bg': 'var(--accent-tool-bg)',
+          'tool-border': 'var(--accent-tool-border)',
+          'tool-soft': 'var(--accent-tool-soft)',
+          'tool-text': 'var(--accent-tool-text)',
+          thinking: 'var(--accent-thinking)',
+          'thinking-bg': 'var(--accent-thinking-bg)',
+          'thinking-border': 'var(--accent-thinking-border)',
+          success: 'var(--accent-success)',
+          'success-bg': 'var(--accent-success-bg)',
+          'success-border': 'var(--accent-success-border)',
+          'success-soft': 'var(--accent-success-soft)',
+          'success-text': 'var(--accent-success-text)',
+          error: 'var(--accent-error)',
+          'error-bg': 'var(--accent-error-bg)',
+          'error-border': 'var(--accent-error-border)',
+          'error-soft': 'var(--accent-error-soft)',
+          'error-text': 'var(--accent-error-text)',
+          system: 'var(--accent-system)',
+          'system-bg': 'var(--accent-system-bg)',
+          'system-border': 'var(--accent-system-border)',
+          'system-soft': 'var(--accent-system-soft)',
+        }
       },
-      backgroundOpacity: {
-        8: '0.08',
+      borderRadius: {
+        sm: 'var(--radius-sm)',
+        md: 'var(--radius-md)',
+        lg: 'var(--radius-lg)',
+        xl: 'var(--radius-xl)',
+      },
+      boxShadow: {
+        sm: 'var(--shadow-sm)',
+        md: 'var(--shadow-md)',
+        lg: 'var(--shadow-lg)',
       },
     },
   },

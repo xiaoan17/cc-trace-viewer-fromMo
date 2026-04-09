@@ -2,29 +2,14 @@ import { useState } from 'react'
 import type { TraceStep } from '@shared/types'
 import { Markdown } from './Markdown'
 
-/* ════════════════════════════════════════════
-   Step type color system
-   thinking  → amber / muted
-   tool_use  → sky / blue
-   tool_result (ok)  → emerald
-   tool_result (err) → red
-═══════════════════════════════════════════ */
-
 export function StepItem({ step }: { step: TraceStep }) {
   const [open, setOpen] = useState(false)
 
   if (step.type === 'text') {
     return (
-      <div
-        className="rounded-2xl rounded-tl-sm px-4 py-3 text-sm leading-relaxed"
-        style={{
-          background: 'var(--bg-2)',
-          border: '1.5px solid var(--accent-agent-border)',
-          color: 'var(--text-1)',
-        }}
-      >
-        <div className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: 'var(--accent-agent)' }}>
-          Assistant
+      <div className="prose-custom rounded-2xl rounded-tl-sm px-6 py-4 text-sm bg-surface-1 border border-accent-agent-border shadow-sm ring-1 ring-accent-agent/5">
+        <div className="text-[10px] font-bold uppercase tracking-widest mb-3 text-accent-agent opacity-70">
+          Assistant Message
         </div>
         <Markdown>{step.text ?? ''}</Markdown>
       </div>
@@ -34,33 +19,26 @@ export function StepItem({ step }: { step: TraceStep }) {
   /* ── Thinking ────────────────────────────── */
   if (step.type === 'thinking') {
     return (
-      <div
-        className="rounded-xl overflow-hidden"
-        style={{
-          border: '1.5px dashed var(--accent-thinking-border)',
-          background: 'var(--accent-thinking-bg)',
-        }}
-      >
+      <div className="rounded-xl overflow-hidden border border-dashed border-accent-thinking-border bg-accent-thinking-bg/30">
         <button
           onClick={() => setOpen(x => !x)}
-          className="flex items-center gap-2.5 w-full text-left px-4 py-2.5"
+          className="flex items-center gap-3 w-full text-left px-4 py-3 group"
         >
-          <ThinkingIcon className="w-4 h-4 flex-shrink-0" />
-          <span className="text-xs font-black uppercase tracking-widest" style={{ color: 'var(--accent-thinking)' }}>
-            Thinking
+          <div className="w-6 h-6 rounded-lg bg-accent-thinking/10 flex items-center justify-center text-accent-thinking border border-accent-thinking/20 group-hover:scale-110 transition-transform">
+            <ThinkingIcon className="w-4 h-4" />
+          </div>
+          <span className="text-[11px] font-bold uppercase tracking-widest text-accent-thinking">
+            Thinking Process
           </span>
           {!open && step.text && (
-            <span className="text-xs truncate flex-1 italic" style={{ color: 'var(--accent-thinking)' }}>
-              {step.text.slice(0, 100)}…
+            <span className="text-xs truncate flex-1 italic text-accent-thinking/60 ml-2">
+              {step.text.slice(0, 80)}…
             </span>
           )}
-          <Chevron open={open} color="var(--accent-thinking)" />
+          <Chevron open={open} className="text-accent-thinking" />
         </button>
         {open && (
-          <div
-            className="px-4 pb-3.5 pt-0 text-sm italic leading-relaxed"
-            style={{ color: 'var(--accent-thinking)', borderTop: '1px dashed var(--accent-thinking-border)' }}
-          >
+          <div className="px-5 pb-4 pt-1 text-sm italic leading-relaxed text-accent-thinking/80 border-t border-dashed border-accent-thinking-border/40 animate-in fade-in duration-300">
             <Markdown>{step.text ?? ''}</Markdown>
           </div>
         )}
@@ -74,60 +52,38 @@ export function StepItem({ step }: { step: TraceStep }) {
     const inputStr = step.input ? JSON.stringify(step.input, null, 2) : ''
 
     return (
-      <div
-        className="rounded-xl overflow-hidden"
-        style={{
-          border: `1.5px solid ${open ? 'var(--accent-tool-border)' : 'rgba(53, 109, 204, 0.16)'}`,
-          background: open ? 'rgba(234, 241, 251, 0.88)' : 'rgba(234, 241, 251, 0.56)',
-        }}
-      >
-        {/* Header */}
+      <div className={`rounded-xl overflow-hidden border transition-all duration-200 ${
+        open ? 'bg-surface-1 border-accent-tool shadow-md' : 'bg-accent-tool-bg border-accent-tool-border hover:border-accent-tool'
+      }`}>
         <button
           onClick={() => setOpen(x => !x)}
-          className="flex items-center gap-2.5 w-full text-left px-4 py-2.5"
+          className="flex items-center gap-3 w-full text-left px-4 py-3"
         >
-          <ToolIcon className="w-4 h-4 flex-shrink-0" color="var(--accent-tool)" />
-          <span className="text-xs font-black uppercase tracking-widest" style={{ color: 'var(--accent-tool-text)' }}>
-            Tool Call
+          <div className="w-6 h-6 rounded-lg bg-accent-tool/10 flex items-center justify-center text-accent-tool border border-accent-tool/20">
+            <ToolIcon className="w-3.5 h-3.5" />
+          </div>
+          <span className="text-[11px] font-black uppercase tracking-widest text-accent-tool-text">
+            Call
           </span>
-          <code
-            className="text-sm font-mono font-semibold px-2 py-0.5 rounded-md"
-            style={{ background: 'var(--accent-tool-bg)', color: 'var(--accent-tool)' }}
-          >
+          <code className="text-[13px] font-mono font-bold px-2 py-0.5 rounded-md bg-accent-tool/10 text-accent-tool border border-accent-tool/20">
             {step.name}
           </code>
           {!open && preview && (
-            <span className="text-sm font-mono truncate flex-1" style={{ color: 'var(--accent-tool-text)', opacity: 0.72 }}>
+            <span className="text-[12px] font-mono truncate flex-1 text-accent-tool-text/60 ml-2">
               {preview}
             </span>
           )}
-          <Chevron open={open} color="var(--accent-tool)" />
+          <Chevron open={open} className="text-accent-tool" />
         </button>
 
-        {/* Input body */}
         {open && inputStr && (
-          <div style={{ borderTop: '1.5px solid rgba(53, 109, 204, 0.16)' }}>
-            <div
-              className="flex items-center gap-2 px-4 py-1.5"
-              style={{ background: 'var(--accent-tool-bg)' }}
-            >
-              <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--accent-tool-text)' }}>
-                Input
-              </span>
-              <span className="text-[10px] font-mono ml-auto" style={{ color: 'var(--accent-tool)' }}>
-                json
-              </span>
+          <div className="border-t border-accent-tool-border/30">
+            <div className="flex items-center justify-between px-4 py-2 bg-accent-tool-bg/50">
+              <span className="text-[9px] font-bold uppercase tracking-widest text-accent-tool-text opacity-70">Argument Map</span>
+              <span className="text-[9px] font-mono text-accent-tool opacity-50 uppercase">JSON OBJECT</span>
             </div>
-            <pre
-              className="px-4 py-3 text-sm font-mono leading-relaxed overflow-x-auto"
-              style={{
-                background: 'var(--accent-tool-soft)',
-                color: 'var(--accent-tool-text)',
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-all',
-              }}
-            >
-              {inputStr.length > 4000 ? inputStr.slice(0, 4000) + '\n… (truncated)' : inputStr}
+            <pre className="px-5 py-4 text-[13px] font-mono leading-relaxed overflow-x-auto text-accent-tool-text bg-surface-0/50 custom-scrollbar">
+              {inputStr.length > 5000 ? inputStr.slice(0, 5000) + '\n… (data too large to display)' : inputStr}
             </pre>
           </div>
         )}
@@ -139,74 +95,50 @@ export function StepItem({ step }: { step: TraceStep }) {
   if (step.type === 'tool_result') {
     const isErr = step.isError
     const out = step.output || ''
-    const isLong = out.length > 600
-    const shown = !open && isLong ? out.slice(0, 600) : out
+    const isLong = out.length > 800
+    const shown = !open && isLong ? out.slice(0, 800) : out
 
     return (
-      <div
-        className="rounded-xl overflow-hidden"
-        style={{
-          border: `1.5px solid ${isErr ? 'var(--accent-error-border)' : 'var(--accent-success-border)'}`,
-          background: isErr ? 'var(--accent-error-bg)' : 'var(--accent-success-bg)',
-        }}
-      >
-        {/* Header */}
-        <div
-          className="flex items-center gap-2.5 px-4 py-2.5"
-          style={{
-            background: isErr ? 'var(--accent-error-bg)' : 'var(--accent-success-bg)',
-            borderBottom: `1.5px solid ${isErr ? 'var(--accent-error-border)' : 'var(--accent-success-border)'}`,
-          }}
-        >
-          {isErr ? (
-            <ErrorIcon className="w-4 h-4 flex-shrink-0" />
-          ) : (
-            <SuccessIcon className="w-4 h-4 flex-shrink-0" />
-          )}
-          <span
-            className="text-xs font-black uppercase tracking-widest"
-            style={{ color: isErr ? 'var(--accent-error)' : 'var(--accent-success)' }}
-          >
-            {isErr ? 'Error' : 'Result'}
+      <div className={`rounded-xl overflow-hidden border transition-all duration-200 ${
+        isErr ? 'border-accent-error-border bg-accent-error-bg/30' : 'border-accent-success-border bg-accent-success-bg/30'
+      }`}>
+        <div className={`flex items-center gap-3 px-4 py-3 border-b ${
+          isErr ? 'border-accent-error-border/40' : 'border-accent-success-border/40'
+        }`}>
+          <div className={`w-6 h-6 rounded-lg flex items-center justify-center border transition-colors ${
+            isErr ? 'bg-accent-error/10 border-accent-error/20 text-accent-error' : 'bg-accent-success/10 border-accent-success/20 text-accent-success'
+          }`}>
+            {isErr ? <ErrorIcon className="w-3.5 h-3.5" /> : <SuccessIcon className="w-3.5 h-3.5" />}
+          </div>
+          <span className={`text-[11px] font-black uppercase tracking-widest ${isErr ? 'text-accent-error' : 'text-accent-success'}`}>
+            {isErr ? 'System Error' : 'Execution Result'}
           </span>
-          <span
-            className="ml-auto text-xs font-mono px-2 py-0.5 rounded-md"
-            style={{
-              background: isErr ? 'var(--accent-error-bg)' : 'var(--accent-success-bg)',
-              border: `1px solid ${isErr ? 'var(--accent-error-border)' : 'var(--accent-success-border)'}`,
-              color: isErr ? 'var(--accent-error)' : 'var(--accent-success)',
-            }}
-          >
-            {out.length.toLocaleString()} chars
+          <span className={`ml-auto text-[10px] font-mono font-bold px-2 py-0.5 rounded-full border ${
+            isErr ? 'bg-accent-error/10 border-accent-error/20 text-accent-error' : 'bg-accent-success/10 border-accent-success/20 text-accent-success'
+          }`}>
+            {out.length.toLocaleString()} bytes
           </span>
         </div>
 
-        {/* Output */}
-        <pre
-          className="px-4 py-3 text-sm font-mono leading-relaxed overflow-x-auto"
-          style={{
-            background: isErr ? 'var(--accent-error-soft)' : 'var(--accent-success-soft)',
-            color: isErr ? 'var(--accent-error-text)' : 'var(--accent-success-text)',
-            whiteSpace: 'pre-wrap',
-            wordBreak: 'break-all',
-            maxHeight: open ? 'none' : '160px',
-            overflow: open ? 'visible' : 'hidden',
-          }}
-        >
-          {shown || '(empty)'}
+        <pre className={`px-5 py-4 text-[13px] font-mono leading-relaxed overflow-x-auto custom-scrollbar ${
+          isErr ? 'text-accent-error-text bg-accent-error-soft/50' : 'text-accent-success-text bg-accent-success-soft/50'
+        }`} style={{
+          maxHeight: open ? 'none' : '240px',
+          overflow: open ? 'visible' : 'hidden',
+        }}>
+          {shown || <span className="opacity-40 italic">(No output content)</span>}
         </pre>
 
         {isLong && (
           <button
             onClick={() => setOpen(x => !x)}
-            className="w-full px-4 py-2 text-xs font-semibold text-left transition-colors"
-            style={{
-              background: isErr ? 'var(--accent-error-bg)' : 'var(--accent-success-bg)',
-              borderTop: `1px solid ${isErr ? 'var(--accent-error-border)' : 'var(--accent-success-border)'}`,
-              color: isErr ? 'var(--accent-error)' : 'var(--accent-success)',
-            }}
+            className={`w-full px-4 py-2.5 text-[11px] font-bold text-center border-t transition-colors ${
+              isErr 
+                ? 'bg-accent-error-bg/50 border-accent-error-border/40 text-accent-error hover:bg-accent-error-bg' 
+                : 'bg-accent-success-bg/50 border-accent-success-border/40 text-accent-success hover:bg-accent-success-bg'
+            }`}
           >
-            {open ? '▲ Collapse output' : `▼ Show all ${out.length.toLocaleString()} chars`}
+            {open ? 'COLLAPSE LOG OUTPUT' : `EXPAND FULL LOG (${out.length.toLocaleString()} CHARS)`}
           </button>
         )}
       </div>
@@ -215,66 +147,34 @@ export function StepItem({ step }: { step: TraceStep }) {
 
   if (step.type === 'system') {
     const body = step.text || ''
-    const isLong = body.length > 500
-    const shown = !open && isLong ? body.slice(0, 500) + '…' : body
     const isTask = step.name?.startsWith('task') === true
     const isTaskError = isTask && step.isError === true
-    const borderColor = isTask
-      ? (isTaskError ? 'var(--accent-error-border)' : 'var(--accent-tool-border)')
-      : 'var(--accent-system-border)'
-    const backgroundColor = isTask
-      ? (isTaskError ? 'var(--accent-error-bg)' : 'var(--accent-tool-bg)')
-      : 'rgba(241, 244, 248, 0.72)'
-    const textColor = isTask
-      ? (isTaskError ? 'var(--accent-error)' : 'var(--accent-tool-text)')
-      : 'var(--accent-system)'
-    const badgeBackground = isTask
-      ? (isTaskError ? 'var(--accent-error-bg)' : 'var(--accent-tool-bg)')
-      : 'var(--accent-system-bg)'
-    const badgeLabel = isTask ? 'Task' : 'System'
-    const detailLabel = step.name?.replace(/^task_/, '')
-
+    
     return (
-      <div
-        className="rounded-xl overflow-hidden"
-        style={{
-          border: `1.5px solid ${borderColor}`,
-          background: backgroundColor,
-        }}
-      >
+      <div className={`rounded-xl overflow-hidden border border-border-2 bg-surface-2/50 ${open ? 'ring-1 ring-border-3 shadow-sm' : ''}`}>
         <button
           onClick={() => setOpen(x => !x)}
-          className="flex items-center gap-2.5 w-full text-left px-4 py-2.5"
+          className="flex items-center gap-3 w-full text-left px-4 py-3 group"
         >
-          {isTask ? (
-            <ToolIcon className="w-4 h-4 flex-shrink-0" color={isTaskError ? 'var(--accent-error)' : 'var(--accent-tool)'} />
-          ) : (
-            <InfoIcon className="w-4 h-4 flex-shrink-0" />
-          )}
-          <span className="text-xs font-black uppercase tracking-widest" style={{ color: textColor }}>
-            {badgeLabel}
+          <div className="w-6 h-6 rounded-lg bg-surface-3 flex items-center justify-center text-text-3 border border-border-2 group-hover:text-text-1 group-hover:border-border-3 transition-colors">
+            {isTask ? <ToolIcon className="w-3.5 h-3.5" /> : <InfoIcon className="w-3.5 h-3.5" />}
+          </div>
+          <span className="text-[11px] font-bold uppercase tracking-widest text-text-3">
+            {isTask ? (isTaskError ? 'Task Failed' : 'Task Event') : 'System Log'}
           </span>
-          {detailLabel && (
-            <code
-              className="text-xs font-mono px-2 py-0.5 rounded-md"
-              style={{ background: badgeBackground, color: textColor }}
-            >
-              {detailLabel}
+          {step.name && (
+            <code className="text-[11px] font-mono px-1.5 py-0.5 rounded bg-surface-3 text-text-2 ml-2">
+              {step.name.replace(/^task_/, '')}
             </code>
           )}
-          <Chevron open={open} color={textColor} />
+          <Chevron open={open} className="text-text-4" />
         </button>
-        {body && (
-          <pre
-            className="px-4 pb-3.5 pt-0 text-xs font-mono leading-relaxed overflow-x-auto"
-            style={{
-              color: textColor,
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word',
-            }}
-          >
-            {shown}
-          </pre>
+        {open && body && (
+          <div className="px-5 pb-4 pt-1 animate-in fade-in duration-300">
+            <pre className="text-[12px] font-mono leading-relaxed whitespace-pre-wrap break-words text-text-2 bg-surface-1/50 p-3 rounded-lg border border-border-1">
+              {body}
+            </pre>
+          </div>
         )}
       </div>
     )
@@ -289,137 +189,86 @@ export function ToolPairItem({ toolUse, toolResult }: { toolUse: TraceStep; tool
   const inputStr = toolUse.input ? JSON.stringify(toolUse.input, null, 2) : ''
   const out = toolResult?.output || ''
   const isErr = toolResult?.isError === true
-  const isLong = out.length > 600
-  const shown = !open && isLong ? out.slice(0, 600) : out
+  const isLong = out.length > 800
+  const shown = !open && isLong ? out.slice(0, 800) : out
 
   return (
-    <div
-      className="rounded-xl overflow-hidden"
-      style={{
-        border: `1.5px solid ${open ? 'var(--accent-tool-border)' : 'rgba(53, 109, 204, 0.16)'}`,
-        background: open ? 'rgba(234, 241, 251, 0.88)' : 'rgba(234, 241, 251, 0.56)',
-      }}
-    >
+    <div className={`rounded-xl overflow-hidden border transition-all duration-200 ${
+      open ? 'bg-surface-1 border-accent-tool shadow-lg ring-1 ring-accent-tool/10' : 'bg-surface-2 border-border-1 hover:border-border-3'
+    }`}>
+      {/* Tool Header */}
       <button
         onClick={() => setOpen(x => !x)}
-        className="flex items-center gap-2.5 w-full text-left px-4 py-2.5"
+        className="flex items-center gap-3 w-full text-left px-4 py-3"
       >
-        <ToolIcon className="w-4 h-4 flex-shrink-0" color="var(--accent-tool)" />
-        <span className="text-xs font-black uppercase tracking-widest" style={{ color: 'var(--accent-tool-text)' }}>
-          Tool
-        </span>
-        <code
-          className="text-sm font-mono font-semibold px-2 py-0.5 rounded-md"
-          style={{ background: 'var(--accent-tool-bg)', color: 'var(--accent-tool)' }}
-        >
-          {toolUse.name}
-        </code>
-        {!open && preview && (
-          <span className="text-sm font-mono truncate flex-1" style={{ color: 'var(--accent-tool-text)', opacity: 0.72 }}>
-            {preview}
-          </span>
-        )}
-        <span
-          className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full"
-          style={{
-            background: toolResult
-              ? (isErr ? 'rgba(220,38,38,0.08)' : 'rgba(22,163,74,0.08)')
-              : 'var(--accent-system-bg)',
-            color: toolResult
-              ? (isErr ? 'var(--accent-error)' : 'var(--accent-success)')
-              : 'var(--accent-system)',
-          }}
-        >
-          {toolResult ? (isErr ? 'error' : 'done') : 'pending'}
-        </span>
-        <Chevron open={open} color="var(--accent-tool)" />
+        <div className="w-8 h-8 rounded-xl bg-accent-tool/10 flex items-center justify-center text-accent-tool border border-accent-tool/20">
+          <ToolIcon className="w-4 h-4" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-0.5">
+            <span className="text-[10px] font-black uppercase tracking-widest text-accent-tool-text opacity-70">Action</span>
+            <code className="text-[13px] font-mono font-bold text-accent-tool">{toolUse.name}</code>
+          </div>
+          {!open && preview && (
+            <div className="text-[11px] font-mono truncate text-text-4">{preview}</div>
+          )}
+        </div>
+        
+        {/* Status Badge */}
+        <div className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider border ${
+          toolResult 
+            ? (isErr ? 'bg-accent-error/10 border-accent-error/20 text-accent-error' : 'bg-accent-success/10 border-accent-success/20 text-accent-success')
+            : 'bg-surface-3 border-border-1 text-text-4'
+        }`}>
+          {toolResult ? (isErr ? 'FAILED' : 'SUCCESS') : 'PENDING'}
+        </div>
+        <Chevron open={open} className="text-text-4" />
       </button>
 
-      {open && inputStr && (
-        <div style={{ borderTop: '1.5px solid rgba(53, 109, 204, 0.16)' }}>
-          <div
-            className="flex items-center gap-2 px-4 py-1.5"
-            style={{ background: 'var(--accent-tool-bg)' }}
-          >
-            <span className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--accent-tool-text)' }}>
-              Input
-            </span>
-            <span className="text-[10px] font-mono ml-auto" style={{ color: 'var(--accent-tool)' }}>
-              json
-            </span>
-          </div>
-          <pre
-            className="px-4 py-3 text-sm font-mono leading-relaxed overflow-x-auto"
-            style={{
-              background: 'var(--accent-tool-soft)',
-              color: 'var(--accent-tool-text)',
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-all',
-            }}
-          >
-            {inputStr.length > 4000 ? inputStr.slice(0, 4000) + '\n… (truncated)' : inputStr}
-          </pre>
-        </div>
-      )}
-
-      {toolResult && (
-        <div style={{ borderTop: open && inputStr ? '1.5px solid rgba(53, 109, 204, 0.16)' : 'none' }}>
-          <div
-            className="flex items-center gap-2.5 px-4 py-2.5"
-            style={{
-              background: isErr ? 'var(--accent-error-bg)' : 'var(--accent-success-bg)',
-              borderTop: `1.5px solid ${isErr ? 'var(--accent-error-border)' : 'var(--accent-success-border)'}`,
-            }}
-          >
-          {isErr ? (
-            <ErrorIcon className="w-4 h-4 flex-shrink-0" />
-          ) : (
-            <SuccessIcon className="w-4 h-4 flex-shrink-0" />
+      {open && (
+        <div className="animate-in fade-in slide-in-from-top-1 duration-200">
+          {/* Input Block */}
+          {inputStr && (
+            <div className="border-t border-border-1 bg-surface-1">
+              <div className="flex items-center justify-between px-4 py-2 bg-surface-2/50">
+                <span className="text-[9px] font-bold uppercase tracking-widest text-text-3">Arguments</span>
+                <span className="text-[9px] font-mono text-text-4">JSON</span>
+              </div>
+              <pre className="px-5 py-4 text-[13px] font-mono leading-relaxed overflow-x-auto text-text-2 custom-scrollbar">
+                {inputStr.length > 5000 ? inputStr.slice(0, 5000) + '\n… (truncated)' : inputStr}
+              </pre>
+            </div>
           )}
-          <span
-            className="text-xs font-black uppercase tracking-widest"
-              style={{ color: isErr ? 'var(--accent-error)' : 'var(--accent-success)' }}
-            >
-              Result
-            </span>
-            <span
-              className="ml-auto text-xs font-mono px-2 py-0.5 rounded-md"
-              style={{
-              background: isErr ? 'rgba(220,38,38,0.08)' : 'rgba(22,163,74,0.08)',
-                border: `1px solid ${isErr ? 'var(--accent-error-border)' : 'var(--accent-success-border)'}`,
-                color: isErr ? 'var(--accent-error)' : 'var(--accent-success)',
-              }}
-            >
-              {out.length.toLocaleString()} chars
-            </span>
-          </div>
 
-          <pre
-            className="px-4 py-3 text-sm font-mono leading-relaxed overflow-x-auto"
-            style={{
-              background: isErr ? 'var(--accent-error-soft)' : 'var(--accent-success-soft)',
-              color: isErr ? 'var(--accent-error-text)' : 'var(--accent-success-text)',
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-all',
-              maxHeight: open ? 'none' : '160px',
-              overflow: open ? 'visible' : 'hidden',
-            }}
-          >
-            {shown || '(empty)'}
-          </pre>
-
-          {isLong && (
-            <button
-              onClick={() => setOpen(x => !x)}
-              className="w-full px-4 py-2 text-xs font-semibold text-left transition-colors"
-              style={{
-                background: isErr ? 'var(--accent-error-bg)' : 'var(--accent-success-bg)',
-                borderTop: `1px solid ${isErr ? 'var(--accent-error-border)' : 'var(--accent-success-border)'}`,
-                color: isErr ? 'var(--accent-error)' : 'var(--accent-success)',
-              }}
-            >
-              {open ? '▲ Collapse output' : `▼ Show all ${out.length.toLocaleString()} chars`}
-            </button>
+          {/* Result Block */}
+          {toolResult && (
+            <div className={`border-t ${isErr ? 'border-accent-error-border/30 bg-accent-error-bg/20' : 'border-accent-success-border/30 bg-accent-success-bg/20'}`}>
+              <div className="flex items-center justify-between px-4 py-2 opacity-80">
+                <span className={`text-[9px] font-bold uppercase tracking-widest ${isErr ? 'text-accent-error' : 'text-accent-success'}`}>
+                  {isErr ? 'Error Trace' : 'Response Output'}
+                </span>
+                <span className="text-[9px] font-mono opacity-50 tabular-nums">{out.length.toLocaleString()} bytes</span>
+              </div>
+              <pre className={`px-5 py-4 text-[13px] font-mono leading-relaxed overflow-x-auto custom-scrollbar ${
+                isErr ? 'text-accent-error-text' : 'text-accent-success-text'
+              }`} style={{
+                maxHeight: open ? 'none' : '240px',
+                overflow: open ? 'visible' : 'hidden',
+              }}>
+                {shown || <span className="opacity-30 italic">(Empty Response)</span>}
+              </pre>
+              
+              {isLong && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); setOpen(x => !x); }}
+                  className={`w-full py-2 text-[10px] font-bold text-center border-t transition-colors ${
+                    isErr ? 'border-accent-error-border/20 hover:bg-accent-error-bg/40 text-accent-error' : 'border-accent-success-border/20 hover:bg-accent-success-bg/40 text-accent-success'
+                  }`}
+                >
+                  {open ? 'COLLAPSE OUTPUT' : 'EXPAND COMPLETE OUTPUT'}
+                </button>
+              )}
+            </div>
           )}
         </div>
       )}
@@ -427,10 +276,10 @@ export function ToolPairItem({ toolUse, toolResult }: { toolUse: TraceStep; tool
   )
 }
 
-function ToolIcon({ className, color }: { className?: string; color: string }) {
+function ToolIcon({ className, color }: { className?: string; color?: string }) {
   return (
     <svg className={className} viewBox="0 0 16 16" fill="none" aria-hidden="true" style={{ color }}>
-      <path d="M9.87 1.77a4.1 4.1 0 0 0-3.76 6.84L2.5 12.23a1.25 1.25 0 1 0 1.77 1.77l3.62-3.61a4.1 4.1 0 0 0 6.84-3.76l-2.37 2.37-2.12-.53-.53-2.12 2.37-2.37Z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M9.87 1.77a4.1 4.1 0 0 0-3.76 6.84L2.5 12.23a1.25 1.25 0 1 0 1.77 1.77l3.62-3.61a4.1 4.1 0 0 0 6.84-3.76l-2.37 2.37-2.12-.53-.53-2.12 2.37-2.37Z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
@@ -438,8 +287,8 @@ function ToolIcon({ className, color }: { className?: string; color: string }) {
 function ThinkingIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M8 2.25a4.75 4.75 0 0 0-2.72 8.64c.39.27.72.82.72 1.36v.5h4v-.5c0-.54.33-1.09.72-1.36A4.75 4.75 0 0 0 8 2.25Z" stroke="var(--accent-thinking)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M6.25 14h3.5" stroke="var(--accent-thinking)" strokeWidth="1.4" strokeLinecap="round" />
+      <path d="M8 2.25a4.75 4.75 0 0 0-2.72 8.64c.39.27.72.82.72 1.36v.5h4v-.5c0-.54.33-1.09.72-1.36A4.75 4.75 0 0 0 8 2.25Z" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M6.25 14h3.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
     </svg>
   )
 }
@@ -447,8 +296,8 @@ function ThinkingIcon({ className }: { className?: string }) {
 function SuccessIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <circle cx="8" cy="8" r="5.25" stroke="var(--accent-success)" strokeWidth="1.4" />
-      <path d="M5.5 8.1 7.2 9.8l3.3-3.6" stroke="var(--accent-success)" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="8" cy="8" r="5.25" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M5.5 8.1 7.2 9.8l3.3-3.6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
@@ -456,8 +305,8 @@ function SuccessIcon({ className }: { className?: string }) {
 function ErrorIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <circle cx="8" cy="8" r="5.25" stroke="var(--accent-error)" strokeWidth="1.4" />
-      <path d="m6.1 6.1 3.8 3.8M9.9 6.1l-3.8 3.8" stroke="var(--accent-error)" strokeWidth="1.4" strokeLinecap="round" />
+      <circle cx="8" cy="8" r="5.25" stroke="currentColor" strokeWidth="1.6" />
+      <path d="m6.1 6.1 3.8 3.8M9.9 6.1l-3.8 3.8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
     </svg>
   )
 }
@@ -465,20 +314,19 @@ function ErrorIcon({ className }: { className?: string }) {
 function InfoIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <circle cx="8" cy="8" r="5.25" stroke="var(--accent-system)" strokeWidth="1.4" />
-      <path d="M8 7v3M8 5.5h.01" stroke="var(--accent-system)" strokeWidth="1.4" strokeLinecap="round" />
+      <circle cx="8" cy="8" r="5.25" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M8 7v3M8 5.5h.01" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
     </svg>
   )
 }
 
-function Chevron({ open, color }: { open: boolean; color: string }) {
+function Chevron({ open, className }: { open: boolean; className?: string }) {
   return (
     <svg
-      className="w-3.5 h-3.5 flex-shrink-0 ml-auto transition-transform duration-150"
-      style={{ transform: open ? 'rotate(90deg)' : 'none', color }}
+      className={`w-3.5 h-3.5 flex-shrink-0 ml-auto transition-transform duration-200 ${open ? 'rotate-90' : ''} ${className}`}
       viewBox="0 0 16 16" fill="none"
     >
-      <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   )
 }
@@ -495,4 +343,4 @@ function getPreview(name: string, input?: Record<string, unknown>): string {
   return ''
 }
 
-function clip(s: string, n = 72) { return s.length > n ? s.slice(0, n) + '…' : s }
+function clip(s: string, n = 80) { return s.length > n ? s.slice(0, n) + '…' : s }

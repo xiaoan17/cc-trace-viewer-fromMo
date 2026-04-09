@@ -3,59 +3,120 @@
 @tailwind utilities;
 
 @layer base {
-  /* ── Light (white) theme ── */
   :root {
+    /* ── Color Palette (Light) ── */
     --bg-0: #ffffff;
-    --bg-1: #f7f7f4;
-    --bg-2: #f1f1ec;
-    --bg-3: #e7e7df;
-    --bg-4: #d8d9d0;
+    --bg-1: #fcfcf9;
+    --bg-2: #f6f6ef;
+    --bg-3: #eaeaec;
+    --bg-4: #dadadd;
 
-    --border-1: rgba(32, 35, 26, 0.08);
-    --border-2: rgba(32, 35, 26, 0.13);
-    --border-3: rgba(32, 35, 26, 0.2);
+    --border-1: rgba(31, 35, 40, 0.08);
+    --border-2: rgba(31, 35, 40, 0.12);
+    --border-3: rgba(31, 35, 40, 0.2);
 
-    --text-1: #171a16;
-    --text-2: #394036;
-    --text-3: #677062;
-    --text-4: #96a08f;
+    --text-1: #1a1b1e;
+    --text-2: #3c3d40;
+    --text-3: #6a6c70;
+    --text-4: #9ba1a6;
 
-    --accent-user: #5b5bd6;
-    --accent-user-2: #7c72e8;
-    --accent-user-bg: rgba(91, 91, 214, 0.1);
-    --accent-user-border: rgba(91, 91, 214, 0.22);
+    /* Semantic Colors */
+    --accent-user: #4f46e5;
+    --accent-user-2: #7c3aed;
+    --accent-user-bg: rgba(79, 70, 229, 0.06);
+    --accent-user-border: rgba(79, 70, 229, 0.15);
 
-    --accent-agent: #0f8c72;
-    --accent-agent-2: #35a488;
-    --accent-agent-bg: rgba(15, 140, 114, 0.08);
-    --accent-agent-border: rgba(15, 140, 114, 0.2);
+    --accent-agent: #059669;
+    --accent-agent-2: #10b981;
+    --accent-agent-bg: rgba(5, 150, 105, 0.06);
+    --accent-agent-border: rgba(5, 150, 105, 0.15);
 
-    --accent-tool: #356dcc;
-    --accent-tool-bg: rgba(53, 109, 204, 0.08);
-    --accent-tool-border: rgba(53, 109, 204, 0.22);
-    --accent-tool-soft: #eaf1fb;
-    --accent-tool-text: #224d98;
+    --accent-tool: #2563eb;
+    --accent-tool-bg: rgba(37, 99, 235, 0.06);
+    --accent-tool-border: rgba(37, 99, 235, 0.15);
+    --accent-tool-soft: #f0f4ff;
+    --accent-tool-text: #1d4ed8;
 
-    --accent-thinking: #9a6a2f;
-    --accent-thinking-bg: rgba(154, 106, 47, 0.09);
-    --accent-thinking-border: rgba(154, 106, 47, 0.22);
+    --accent-thinking: #d97706;
+    --accent-thinking-bg: rgba(217, 119, 6, 0.06);
+    --accent-thinking-border: rgba(217, 119, 6, 0.15);
 
-    --accent-success: #2f8a57;
-    --accent-success-bg: rgba(47, 138, 87, 0.08);
-    --accent-success-border: rgba(47, 138, 87, 0.22);
-    --accent-success-soft: #edf8f1;
-    --accent-success-text: #226540;
+    --accent-success: #16a34a;
+    --accent-success-bg: rgba(22, 163, 74, 0.05);
+    --accent-success-border: rgba(22, 163, 74, 0.15);
+    --accent-success-soft: #f0fdf4;
+    --accent-success-text: #15803d;
 
-    --accent-error: #c45a49;
-    --accent-error-bg: rgba(196, 90, 73, 0.08);
-    --accent-error-border: rgba(196, 90, 73, 0.22);
-    --accent-error-soft: #fdf0ed;
-    --accent-error-text: #964336;
+    --accent-error: #dc2626;
+    --accent-error-bg: rgba(220, 38, 38, 0.05);
+    --accent-error-border: rgba(220, 38, 38, 0.15);
+    --accent-error-soft: #fef2f2;
+    --accent-error-text: #b91c1c;
 
-    --accent-system: #677487;
-    --accent-system-bg: rgba(103, 116, 135, 0.08);
-    --accent-system-border: rgba(103, 116, 135, 0.2);
-    --accent-system-soft: #f1f4f8;
+    --accent-system: #4b5563;
+    --accent-system-bg: rgba(75, 85, 99, 0.06);
+    --accent-system-border: rgba(75, 85, 99, 0.15);
+    --accent-system-soft: #f9fafb;
+
+    /* Layout & UI */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --radius-xl: 20px;
+    
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+  }
+
+  .dark {
+    /* ── Color Palette (Dark) ── */
+    --bg-0: #0d1117;
+    --bg-1: #161b22;
+    --bg-2: #21262d;
+    --bg-3: #30363d;
+    --bg-4: #484f58;
+
+    --border-1: rgba(240, 246, 252, 0.08);
+    --border-2: rgba(240, 246, 252, 0.12);
+    --border-3: rgba(240, 246, 252, 0.2);
+
+    --text-1: #e6edf3;
+    --text-2: #d0d7de;
+    --text-3: #8b949e;
+    --text-4: #6e7681;
+
+    --accent-user-bg: rgba(124, 58, 237, 0.15);
+    --accent-user-border: rgba(124, 58, 237, 0.3);
+    
+    --accent-agent-bg: rgba(16, 185, 129, 0.15);
+    --accent-agent-border: rgba(16, 185, 129, 0.3);
+
+    --accent-tool-bg: rgba(37, 99, 235, 0.15);
+    --accent-tool-border: rgba(37, 99, 235, 0.3);
+    --accent-tool-soft: #1e293b;
+    --accent-tool-text: #60a5fa;
+
+    --accent-thinking-bg: rgba(245, 158, 11, 0.15);
+    --accent-thinking-border: rgba(245, 158, 11, 0.3);
+
+    --accent-success-bg: rgba(5, 150, 105, 0.12);
+    --accent-success-border: rgba(5, 150, 105, 0.25);
+    --accent-success-soft: #064e3b;
+    --accent-success-text: #34d399;
+
+    --accent-error-bg: rgba(220, 38, 38, 0.12);
+    --accent-error-border: rgba(220, 38, 38, 0.25);
+    --accent-error-soft: #450a0a;
+    --accent-error-text: #f87171;
+
+    --accent-system-bg: rgba(110, 118, 129, 0.15);
+    --accent-system-border: rgba(110, 118, 129, 0.3);
+    --accent-system-soft: #161b22;
+
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+    --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.4), 0 2px 4px -1px rgba(0,0,0,0.3);
+    --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.5), 0 4px 6px -2px rgba(0,0,0,0.4);
   }
 
   html, body, #root { height: 100%; }
@@ -63,17 +124,32 @@
   body {
     background: var(--bg-0);
     color: var(--text-1);
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
     font-size: 15px;
     -webkit-font-smoothing: antialiased;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 
   * { box-sizing: border-box; }
 
-  ::selection { background: rgba(91, 91, 214, 0.18); }
+  ::selection { background: var(--accent-user-bg); color: inherit; }
 
-  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 2px; }
+  ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 10px; transition: background 0.2s; }
   ::-webkit-scrollbar-thumb:hover { background: var(--border-3); }
+}
+
+@layer components {
+  .btn-icon {
+    @apply p-1.5 rounded-lg transition-all hover:bg-[var(--bg-3)] active:scale-95 text-[var(--text-3)] hover:text-[var(--text-1)];
+  }
+  
+  .card {
+    @apply rounded-[var(--radius-md)] border border-[var(--border-2)] bg-[var(--bg-1)] shadow-[var(--shadow-sm)];
+  }
+
+  .prose-custom {
+    @apply leading-relaxed text-[var(--text-2)];
+  }
 }
