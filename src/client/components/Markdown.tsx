@@ -22,7 +22,7 @@ const components: Components = {
 
   // Paragraph
   p: ({ children }) => (
-    <p className="mb-3 last:mb-0 leading-relaxed" style={{ color: 'var(--text-1)' }}>
+    <p className="mb-3 last:mb-0 break-words text-[15px] font-medium leading-8" style={{ color: 'inherit' }}>
       {children}
     </p>
   ),
@@ -33,10 +33,10 @@ const components: Components = {
     if (isBlock) return <code className={className}>{children}</code>
     return (
       <code
-        className="text-sm font-mono px-1.5 py-0.5 rounded-md"
+        className="text-[0.92em] font-mono font-semibold px-1.5 py-0.5 rounded-md"
         style={{
-          background: 'var(--accent-tool-bg)',
-          border: '1px solid var(--accent-tool-border)',
+          background: 'var(--bg-0)',
+          border: '1px solid var(--border-2)',
           color: 'var(--accent-tool-text)',
         }}
       >
@@ -47,7 +47,7 @@ const components: Components = {
 
   // Code block
   pre: ({ children }) => (
-    <div className="my-3 rounded-xl overflow-hidden" style={{ border: '1.5px solid var(--border-2)' }}>
+    <div className="my-4 overflow-hidden rounded-2xl" style={{ border: '1.5px solid var(--border-2)' }}>
       <div
         className="flex items-center px-3.5 py-1.5"
         style={{ background: 'var(--bg-3)', borderBottom: '1px solid var(--border-1)' }}
@@ -62,8 +62,8 @@ const components: Components = {
         </div>
       </div>
       <pre
-        className="px-4 py-3.5 text-sm font-mono leading-relaxed overflow-x-auto"
-        style={{ background: 'var(--bg-2)', color: 'var(--text-2)', margin: 0 }}
+        className="overflow-x-auto px-4 py-4 text-sm font-mono leading-7"
+        style={{ background: 'var(--bg-1)', color: 'var(--text-1)', margin: 0 }}
       >
         {children}
       </pre>
@@ -72,17 +72,17 @@ const components: Components = {
 
   // Lists
   ul: ({ children }) => (
-    <ul className="mb-3 space-y-1 pl-1" style={{ color: 'var(--text-1)' }}>
+    <ul className="mb-3 space-y-2 pl-1" style={{ color: 'inherit' }}>
       {children}
     </ul>
   ),
   ol: ({ children }) => (
-    <ol className="mb-3 space-y-1 pl-1 list-decimal list-inside" style={{ color: 'var(--text-1)' }}>
+    <ol className="mb-3 space-y-2 pl-1 list-decimal list-inside" style={{ color: 'inherit' }}>
       {children}
     </ol>
   ),
   li: ({ children }) => (
-    <li className="flex items-start gap-2 text-base leading-relaxed">
+    <li className="flex items-start gap-2 text-[15px] font-medium leading-8">
       <span className="mt-2 w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: 'var(--text-4)' }} />
       <span>{children}</span>
     </li>
@@ -91,12 +91,11 @@ const components: Components = {
   // Blockquote
   blockquote: ({ children }) => (
     <blockquote
-      className="my-3 pl-4 py-1"
+      className="my-4 rounded-r-xl py-2 pl-4 pr-3"
       style={{
         borderLeft: '3px solid var(--accent-user-border)',
-        background: 'var(--accent-user-bg)',
-        color: 'var(--text-2)',
-        borderRadius: '0 8px 8px 0',
+        background: 'var(--bg-0)',
+        color: 'inherit',
       }}
     >
       {children}
@@ -120,7 +119,7 @@ const components: Components = {
     </th>
   ),
   td: ({ children }) => (
-    <td className="px-4 py-2.5 text-sm" style={{ color: 'var(--text-1)', borderTop: '1px solid var(--border-1)' }}>
+    <td className="px-4 py-2.5 text-sm font-medium" style={{ color: 'inherit', borderTop: '1px solid var(--border-1)' }}>
       {children}
     </td>
   ),
@@ -132,10 +131,10 @@ const components: Components = {
 
   // Strong / em
   strong: ({ children }) => (
-    <strong className="font-bold" style={{ color: 'var(--text-1)' }}>{children}</strong>
+    <strong className="font-bold" style={{ color: 'inherit' }}>{children}</strong>
   ),
   em: ({ children }) => (
-    <em className="italic" style={{ color: 'var(--text-2)' }}>{children}</em>
+    <em className="italic" style={{ color: 'inherit', opacity: 0.92 }}>{children}</em>
   ),
 
   // Link

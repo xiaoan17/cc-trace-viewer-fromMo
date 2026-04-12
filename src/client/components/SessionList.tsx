@@ -51,31 +51,34 @@ export function SessionList({ selected, onSelect }: {
   }, [sessions])
 
   return (
-    <div className="flex flex-col h-full bg-surface-1">
+    <div className="flex flex-col h-full bg-surface-1 border-r border-border-2">
       {/* Header Area */}
-      <div className="p-5 space-y-5">
+      <div className="p-6 space-y-6">
         {/* Wordmark */}
-        <div className="flex items-center gap-3">
-          <div className="relative w-9 h-9 flex-shrink-0 group">
-            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 blur-[2px] group-hover:blur-[4px] transition-all" />
-            <div className="relative z-10 flex items-center justify-center w-full h-full bg-white dark:bg-slate-900 rounded-xl text-text-1 text-lg font-bold border border-white/20">
+        <div className="flex items-center gap-4">
+          <div className="relative w-10 h-10 flex-shrink-0 group">
+            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 blur-[3px] group-hover:blur-[6px] transition-all duration-500 opacity-80" />
+            <div className="relative z-10 flex items-center justify-center w-full h-full bg-white dark:bg-slate-900 rounded-xl text-text-1 text-xl font-bold border border-white/20 shadow-premium">
               ⌬
             </div>
           </div>
           <div className="min-w-0">
-            <h1 className="text-sm font-bold text-text-1 tracking-tight truncate">Trace Viewer</h1>
-            <p className="text-[10px] text-text-4 font-medium uppercase tracking-wider">
-              {loading ? 'Scanning files…' : `${sessions.length} sessions found`}
-            </p>
+            <h1 className="text-base font-extrabold text-text-1 tracking-tight truncate">Trace Viewer</h1>
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-accent-success animate-pulse" />
+              <p className="text-[10px] text-text-4 font-bold uppercase tracking-widest">
+                {loading ? 'Scanning…' : `${sessions.length} sessions`}
+              </p>
+            </div>
           </div>
         </div>
 
         {/* Search Input */}
         <div className="relative group">
-          <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-            <svg className="w-3.5 h-3.5 text-text-4 group-focus-within:text-accent-user transition-colors" viewBox="0 0 20 20" fill="none">
-              <circle cx="8.5" cy="8.5" r="5.75" stroke="currentColor" strokeWidth="1.8"/>
-              <path d="M13 13l3.5 3.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/>
+          <div className="absolute inset-y-0 left-3.5 flex items-center pointer-events-none">
+            <svg className="w-4 h-4 text-text-4 group-focus-within:text-accent-user transition-colors duration-300" viewBox="0 0 20 20" fill="none">
+              <circle cx="8.5" cy="8.5" r="5.75" stroke="currentColor" strokeWidth="2"/>
+              <path d="M13 13l3.5 3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
             </svg>
           </div>
           <input
@@ -83,14 +86,14 @@ export function SessionList({ selected, onSelect }: {
             placeholder="Search sessions…"
             value={query}
             onChange={e => setQuery(e.target.value)}
-            className="w-full bg-surface-2 border border-border-1 focus:border-accent-user/50 focus:ring-4 focus:ring-accent-user/5 rounded-lg py-2 pl-9 pr-8 text-xs text-text-1 placeholder-text-4 outline-none transition-all"
+            className="w-full bg-surface-2 border border-border-2 focus:border-accent-user/50 focus:ring-4 focus:ring-accent-user/10 rounded-xl py-2.5 pl-10 pr-9 text-xs text-text-1 placeholder-text-4 outline-none transition-all duration-300"
           />
           {query && (
             <button
               onClick={() => setQuery('')}
-              className="absolute inset-y-0 right-2 px-1 flex items-center text-text-4 hover:text-text-1 transition-colors"
+              className="absolute inset-y-0 right-2.5 px-1 flex items-center text-text-4 hover:text-text-1 transition-colors"
             >
-              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                 <path d="M18 6L6 18M6 6l12 12" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </button>
@@ -98,9 +101,9 @@ export function SessionList({ selected, onSelect }: {
         </div>
 
         {/* Filters */}
-        <div className="flex bg-surface-2 p-1 rounded-lg border border-border-1">
+        <div className="flex bg-surface-2 p-1 rounded-xl border border-border-2 shadow-sm">
           <FilterBtn active={src === 'all'} onClick={() => setSrc('all')}>
-            All <span className="ml-1 opacity-50">{sessions.length}</span>
+            All <span className="ml-1 opacity-40 font-mono">{sessions.length}</span>
           </FilterBtn>
           {SOURCES.map(s => (
             <FilterBtn
@@ -110,7 +113,7 @@ export function SessionList({ selected, onSelect }: {
             >
               <div className="flex items-center gap-1.5 justify-center">
                 <SourceIcon source={s} className="w-3.5 h-3.5" />
-                <span>{counts[s] || 0}</span>
+                <span className="font-mono">{counts[s] || 0}</span>
               </div>
             </FilterBtn>
           ))}
@@ -118,13 +121,13 @@ export function SessionList({ selected, onSelect }: {
       </div>
 
       {/* Session List */}
-      <div className="flex-1 overflow-y-auto border-t border-border-1 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto border-t border-border-2 custom-scrollbar px-3 py-4">
         {loading ? (
           <SkeletonList />
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-text-4">
-            <div className="text-3xl mb-3 opacity-20 italic font-serif">∅</div>
-            <div className="text-[11px] font-medium tracking-wide uppercase">No sessions found</div>
+          <div className="flex flex-col items-center justify-center py-20 text-text-4 animate-in fade-in duration-500">
+            <div className="text-4xl mb-4 opacity-10">∅</div>
+            <div className="text-[11px] font-bold tracking-[0.2em] uppercase opacity-60">No sessions found</div>
           </div>
         ) : (
           SOURCES.map(source => {
@@ -134,15 +137,15 @@ export function SessionList({ selected, onSelect }: {
             const config = getSourceConfig(source)
 
             return (
-              <div key={source} className="group/section">
-                <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-2.5 bg-surface-1/90 backdrop-blur-md border-b border-border-1">
-                  <span className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.15em]" style={{ color: config.color }}>
+              <div key={source} className="mb-6 last:mb-0">
+                <div className="flex items-center justify-between px-3 mb-3">
+                  <span className="flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-[0.2em]" style={{ color: config.color }}>
                     <SourceIcon source={source} className="w-3.5 h-3.5" />
                     {config.label}
                   </span>
-                  <span className="text-[10px] font-mono text-text-4">{items.length}</span>
+                  <span className="text-[10px] font-mono font-bold text-text-4 bg-surface-2 px-1.5 py-0.5 rounded border border-border-1">{items.length}</span>
                 </div>
-                <div className="divide-y divide-border-1/50">
+                <div className="space-y-1">
                   {items.map(m => (
                     <SessionRow
                       key={m.filePath}
@@ -167,10 +170,10 @@ function FilterBtn({ active, onClick, children }: {
   return (
     <button
       onClick={onClick}
-      className={`flex-1 text-[10px] font-bold px-2 py-1.5 rounded-md transition-all ${
+      className={`flex-1 text-[10px] font-bold px-2 py-2 rounded-lg transition-all duration-300 ${
         active 
-          ? 'bg-surface-0 text-text-1 shadow-sm border border-border-1 ring-1 ring-black/5' 
-          : 'text-text-4 hover:text-text-2'
+          ? 'bg-surface-0 text-text-1 shadow-md border border-border-2 ring-1 ring-black/5' 
+          : 'text-text-4 hover:text-text-2 hover:bg-surface-0/50'
       }`}
     >
       {children}
@@ -187,54 +190,54 @@ function SessionRow({ meta, active, onClick }: {
   return (
     <button
       onClick={onClick}
-      className={`w-full text-left px-5 py-4 group relative transition-all duration-200 outline-none ${
+      className={`w-full text-left p-3.5 rounded-xl group relative transition-all duration-300 outline-none ${
         active 
-          ? 'bg-surface-2 ring-1 ring-inset ring-border-2' 
-          : 'hover:bg-surface-2/50'
+          ? 'bg-surface-0 shadow-lg border border-border-2 ring-1 ring-black/5 z-10 scale-[1.02]' 
+          : 'hover:bg-surface-2 border border-transparent'
       }`}
     >
       {/* Active Indicator */}
       {active && (
-        <div className="absolute left-0 top-0 bottom-0 w-1 rounded-r-full bg-accent-user shadow-[0_0_12px_rgba(79,70,229,0.5)] z-20" />
+        <div className="absolute left-0 top-3 bottom-3 w-1 rounded-r-full bg-accent-user shadow-[0_0_12px_rgba(99,102,241,0.6)] z-20" />
       )}
 
       <div className="flex items-start gap-3.5">
         {/* Avatar/Icon */}
-        <div className={`w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center transition-all duration-300 border ${
+        <div className={`w-11 h-11 rounded-xl flex-shrink-0 flex items-center justify-center transition-all duration-500 border ${
           active 
-            ? 'bg-white dark:bg-slate-800 border-border-2 shadow-sm scale-110' 
-            : 'bg-surface-3 border-transparent group-hover:border-border-2'
+            ? 'bg-white dark:bg-slate-800 border-border-2 shadow-premium scale-110' 
+            : 'bg-surface-3 border-transparent group-hover:bg-surface-0 group-hover:border-border-2 group-hover:shadow-md'
         }`}>
-          <SourceIcon source={meta.source} className={`w-5 h-5 transition-transform group-hover:scale-110 ${active ? 'opacity-100' : 'opacity-70'}`} />
+          <SourceIcon source={meta.source} className={`w-6 h-6 transition-transform duration-500 group-hover:scale-110 ${active ? 'opacity-100' : 'opacity-60'}`} />
         </div>
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between gap-2 mb-1">
-            <h4 className={`text-xs font-mono truncate transition-colors ${active ? 'text-text-1 font-semibold' : 'text-text-2 group-hover:text-text-1'}`}>
+          <div className="flex items-center justify-between gap-2 mb-1.5">
+            <h4 className={`text-xs font-mono truncate transition-colors duration-300 ${active ? 'text-text-1 font-bold' : 'text-text-2 group-hover:text-text-1'}`}>
               {shortPath(meta.cwd)}
             </h4>
-            <span className="text-[10px] text-text-4 tabular-nums">
+            <span className="text-[10px] font-bold text-text-4 tabular-nums opacity-60">
               {timeAgo(meta.startedAt)}
             </span>
           </div>
 
           <div className="flex items-center gap-2.5">
-            <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded border transition-colors ${
+            <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded transition-colors duration-300 ${
               active 
-                ? 'bg-accent-user/10 border-accent-user/30 text-accent-user' 
-                : 'bg-surface-3 border-border-1 text-text-4'
+                ? 'bg-accent-user/10 text-accent-user border border-accent-user/20' 
+                : 'bg-surface-2 text-text-4 border border-border-1'
             }`}>
               #{shortId}
             </span>
-            <div className="flex items-center gap-1.5 text-[10px] text-text-4">
-              <span className="font-medium text-text-3">{meta.turnCount}</span>
-              <span className="opacity-40">turns</span>
+            <div className="flex items-center gap-1.5 text-[10px] text-text-4 font-bold">
+              <span className={`transition-colors ${active ? 'text-text-2' : 'text-text-3'}`}>{meta.turnCount}</span>
+              <span className="opacity-40 uppercase text-[9px] tracking-wider">turns</span>
             </div>
             {meta.model && (
               <div className="flex items-center gap-1.5 overflow-hidden">
                 <span className="w-1 h-1 rounded-full bg-border-3" />
-                <span className="text-[10px] text-text-4 truncate font-medium">
+                <span className="text-[9px] text-text-4 truncate font-bold uppercase tracking-tight opacity-70">
                   {meta.model.split('/').pop()?.split(':')[0]}
                 </span>
               </div>
@@ -248,13 +251,13 @@ function SessionRow({ meta, active, onClick }: {
 
 function SkeletonList() {
   return (
-    <div className="p-5 space-y-6">
+    <div className="space-y-4 px-1">
       {Array.from({ length: 5 }).map((_, i) => (
-        <div key={i} className="flex gap-4 animate-pulse">
-          <div className="w-10 h-10 rounded-xl bg-surface-3" />
-          <div className="flex-1 space-y-2.5 py-1">
-            <div className="h-3 bg-surface-3 rounded w-3/4" />
-            <div className="h-2 bg-surface-2 rounded w-1/2" />
+        <div key={i} className="flex gap-4 animate-pulse p-2">
+          <div className="w-11 h-11 rounded-xl bg-surface-3" />
+          <div className="flex-1 space-y-3 py-1.5">
+            <div className="h-3 bg-surface-3 rounded-full w-3/4" />
+            <div className="h-2 bg-surface-2 rounded-full w-1/2" />
           </div>
         </div>
       ))}
