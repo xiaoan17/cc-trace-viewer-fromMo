@@ -3,7 +3,7 @@ import { useSession } from '../hooks/useSessions'
 import { TurnCard } from './TurnCard'
 import { SourceBadge, getSourceConfig } from './SourceBadge'
 import { SourceIcon } from './SourceIcon'
-import { exportAsJSON, exportAsMarkdown } from '../utils/exportTrace'
+import { exportAsJSON, exportAsMarkdown, exportAsHTML } from '../utils/exportTrace'
 import type { SessionMeta } from '@shared/types'
 
 function shortPath(p = '') {
@@ -113,6 +113,17 @@ export function TraceViewer({ meta }: { meta: SessionMeta }) {
                       </svg>
                     </div>
                     Export as JSON
+                  </button>
+                  <button
+                    className="w-full text-left px-4 py-2.5 text-xs text-text-2 hover:bg-surface-2 hover:text-text-1 transition-colors flex items-center gap-3 font-bold"
+                    onClick={() => { exportAsHTML(session, meta); setExportOpen(false) }}
+                  >
+                    <div className="w-7 h-7 rounded-lg bg-accent-tool/10 flex items-center justify-center text-accent-tool">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                      </svg>
+                    </div>
+                    Export as HTML
                   </button>
                   <button
                     className="w-full text-left px-4 py-2.5 text-xs text-text-2 hover:bg-surface-2 hover:text-text-1 transition-colors flex items-center gap-3 font-bold"
