@@ -217,6 +217,10 @@ function toTaskStep(task: TaskNotification, id: string): TraceStep {
   }
 }
 
+function withTimestamp(step: TraceStep, timestamp?: string): TraceStep {
+  return timestamp ? { ...step, timestamp } : step
+}
+
 function formatToolResultOutput(content: unknown, toolUseResult: unknown): string {
   const base =
     Array.isArray(content)
@@ -533,6 +537,7 @@ export async function parseClaudeSession(filePath: string): Promise<TraceSession
             steps.push({
               id: `${record.uuid}-text-0`,
               type: 'text',
+              timestamp: record.timestamp,
               text: msgContent,
             })
             continue
@@ -547,6 +552,7 @@ export async function parseClaudeSession(filePath: string): Promise<TraceSession
               steps.push({
                 id: `${record.uuid}-text-${index}`,
                 type: 'text',
+                timestamp: record.timestamp,
                 text: block.text,
               })
               return
@@ -556,6 +562,7 @@ export async function parseClaudeSession(filePath: string): Promise<TraceSession
               steps.push({
                 id: `${record.uuid}-thinking-${index}`,
                 type: 'thinking',
+                timestamp: record.timestamp,
                 text: block.thinking,
               })
               return
@@ -566,6 +573,7 @@ export async function parseClaudeSession(filePath: string): Promise<TraceSession
               steps.push({
                 id: `tool-${callId || `${record.uuid}-${index}`}`,
                 type: 'tool_use',
+                timestamp: record.timestamp,
                 callId,
                 name: typeof block.name === 'string' ? block.name : undefined,
                 input: typeof block.input === 'object' && block.input !== null
@@ -585,6 +593,7 @@ export async function parseClaudeSession(filePath: string): Promise<TraceSession
             steps.push({
               id: `result-${callId || `${record.uuid}-${index}`}`,
               type: 'tool_result',
+              timestamp: record.timestamp,
               callId,
               output: formatToolResultOutput(block.content, record.toolUseResult),
               isError: block.is_error === true,
@@ -600,7 +609,7 @@ export async function parseClaudeSession(filePath: string): Promise<TraceSession
               : ''
           const taskNotification = parseTaskNotification(rawText)
           if (taskNotification) {
-            steps.push(toTaskStep(taskNotification, record.uuid || `task-${steps.length}`))
+            steps.push(withTimestamp(toTaskStep(taskNotification, record.uuid || `task-${steps.length}`), record.timestamp))
             continue
           }
           const normalizedText = normalizeUserFacingText(rawText)
@@ -610,6 +619,7 @@ export async function parseClaudeSession(filePath: string): Promise<TraceSession
           steps.push({
             id: record.uuid || `user-${steps.length}`,
             type: 'system',
+            timestamp: record.timestamp,
             name: 'local_command',
             text: normalizedText,
           })
@@ -619,7 +629,7 @@ export async function parseClaudeSession(filePath: string): Promise<TraceSession
         if (record.type === 'queue-operation') {
           const taskNotification = parseTaskNotification(record.content || '')
           if (taskNotification) {
-            steps.push(toTaskStep(taskNotification, record.uuid || `queue-${steps.length}`))
+            steps.push(withTimestamp(toTaskStep(taskNotification, record.uuid || `queue-${steps.length}`), record.timestamp))
           }
           continue
         }
@@ -627,7 +637,7 @@ export async function parseClaudeSession(filePath: string): Promise<TraceSession
         if (record.type === 'system') {
           const taskNotification = parseTaskNotification(record.content || '')
           if (taskNotification) {
-            steps.push(toTaskStep(taskNotification, record.uuid || `task-${steps.length}`))
+            steps.push(withTimestamp(toTaskStep(taskNotification, record.uuid || `task-${steps.length}`), record.timestamp))
             continue
           }
           const system = summarizeSystemRecord(record)
@@ -635,6 +645,7 @@ export async function parseClaudeSession(filePath: string): Promise<TraceSession
             steps.push({
               id: record.uuid || `system-${steps.length}`,
               type: 'system',
+              timestamp: record.timestamp,
               name: system.name,
               text: system.text,
             })
@@ -660,6 +671,7 @@ export async function parseClaudeSession(filePath: string): Promise<TraceSession
       turns.push({
         id: `turn-${turnIndex++}`,
         userMessage: userText,
+        startedAt: userMsg.timestamp,
         steps: displaySteps,
         assistantMessage,
         tokenUsage,

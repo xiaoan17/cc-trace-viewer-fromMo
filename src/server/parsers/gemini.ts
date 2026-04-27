@@ -176,6 +176,7 @@ function buildTurns(messages: GeminiMessage[]): TraceTurn[] {
           steps.push({
             id: `${next.id || `gemini-${j}`}-thinking`,
             type: 'thinking',
+            ...(next.timestamp ? { timestamp: next.timestamp } : {}),
             text: thoughts,
           })
         }
@@ -184,6 +185,7 @@ function buildTurns(messages: GeminiMessage[]): TraceTurn[] {
           steps.push({
             id: `${next.id || `gemini-${j}`}-text`,
             type: 'text',
+            ...(next.timestamp ? { timestamp: next.timestamp } : {}),
             text,
           })
         }
@@ -193,6 +195,7 @@ function buildTurns(messages: GeminiMessage[]): TraceTurn[] {
           steps.push({
             id: `tool-${callId}`,
             type: 'tool_use',
+            ...(next.timestamp ? { timestamp: next.timestamp } : {}),
             callId,
             name: toolCall.name,
             input: toInputRecord(toolCall.args),
@@ -204,6 +207,7 @@ function buildTurns(messages: GeminiMessage[]): TraceTurn[] {
           steps.push({
             id: `result-${callId}`,
             type: 'tool_result',
+            ...(next.timestamp ? { timestamp: next.timestamp } : {}),
             callId,
             output,
             isError: isToolCallError(toolCall),
@@ -220,6 +224,7 @@ function buildTurns(messages: GeminiMessage[]): TraceTurn[] {
         steps.push({
           id: next.id || `${next.type}-${turnIndex}-${steps.length}`,
           type: 'system',
+          ...(next.timestamp ? { timestamp: next.timestamp } : {}),
           name: next.type,
           text,
           isError: next.type === 'error',
@@ -247,6 +252,7 @@ function buildTurns(messages: GeminiMessage[]): TraceTurn[] {
     turns.push({
       id: `turn-${turnIndex++}`,
       userMessage,
+      ...(message.timestamp ? { startedAt: message.timestamp } : {}),
       steps: displaySteps,
       assistantMessage,
       tokenUsage,
@@ -266,6 +272,7 @@ function buildSystemOnlyTurn(messages: GeminiMessage[]): TraceTurn | null {
       return {
         id: message.id || `${message.type}-event-${index}`,
         type: 'system',
+        ...(message.timestamp ? { timestamp: message.timestamp } : {}),
         name: message.type,
         text,
         isError: message.type === 'error',

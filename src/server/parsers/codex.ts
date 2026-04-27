@@ -136,6 +136,7 @@ export async function parseCodexSession(filePath: string): Promise<TraceSession 
           steps.push({
             id: `tool-${callId}`,
             type: 'tool_use',
+            timestamp: ri.timestamp,
             callId,
             name: payload.name,
             input:
@@ -151,6 +152,7 @@ export async function parseCodexSession(filePath: string): Promise<TraceSession 
           steps.push({
             id: `result-${callId}`,
             type: 'tool_result',
+            timestamp: ri.timestamp,
             callId,
             output:
               typeof payload.output === 'string'
@@ -169,6 +171,7 @@ export async function parseCodexSession(filePath: string): Promise<TraceSession 
             steps.push({
               id: `reasoning-${steps.length}`,
               type: 'thinking',
+              timestamp: ri.timestamp,
               text: summaryText,
             })
           }
@@ -183,6 +186,7 @@ export async function parseCodexSession(filePath: string): Promise<TraceSession 
           steps.unshift({
             id: `agent-reasoning-${steps.length}`,
             type: 'thinking',
+            timestamp: re.timestamp,
             text,
           })
         }
@@ -214,6 +218,8 @@ export async function parseCodexSession(filePath: string): Promise<TraceSession 
       turns.push({
         id: turnId || `turn-${turnIndex}`,
         userMessage,
+        startedAt: taskStartedTs,
+        completedAt: taskCompleteTs,
         steps,
         assistantMessage,
         tokenUsage,

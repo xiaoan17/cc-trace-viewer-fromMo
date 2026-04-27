@@ -25,6 +25,8 @@ export interface SessionMeta {
 export interface TraceTurn {
   id: string
   userMessage: string
+  startedAt?: string
+  completedAt?: string
   steps: TraceStep[]
   assistantMessage?: string
   tokenUsage?: TokenUsage
@@ -33,6 +35,7 @@ export interface TraceTurn {
 export interface TraceStep {
   id: string
   type: 'tool_use' | 'tool_result' | 'thinking' | 'text' | 'system'
+  timestamp?: string
   callId?: string
   name?: string
   input?: Record<string, unknown>
