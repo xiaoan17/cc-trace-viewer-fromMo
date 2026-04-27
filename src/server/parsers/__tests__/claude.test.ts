@@ -84,6 +84,43 @@ describe('readClaudeMeta', () => {
     const meta = await readClaudeMeta(f)
     expect(meta!.turnCount).toBe(1)
   })
+
+  it('counts user turns after long tool-heavy prefixes', async () => {
+    const filler = Array.from({ length: 520 }, (_, i) =>
+      toolResultMsg(`tr-${i}`, 'root', `tool-${i}`, `output ${i}`),
+    )
+    const f = tmp([
+      baseRecord(),
+      ...filler,
+      userMsg('u1', 'root', 'Late user message'),
+    ])
+
+    const meta = await readClaudeMeta(f)
+    expect(meta!.turnCount).toBe(1)
+  })
+
+  it('uses agentId to distinguish sidechain subagent sessions', async () => {
+    const f = tmp([
+      { ...baseRecord(), isSidechain: true, agentId: 'agent-abc' },
+      userMsg('u1', 'root', 'Subagent prompt'),
+    ])
+
+    const meta = await readClaudeMeta(f)
+    expect(meta!.id).toBe(`${SESSION_ID}:agent-abc`)
+  })
+
+  it('fills metadata from later records when the first session record is permission-only', async () => {
+    const f = tmp([
+      { type: 'permission-mode', permissionMode: 'default', sessionId: SESSION_ID },
+      baseRecord({ type: 'user', uuid: 'u1', parentUuid: 'root', message: { role: 'user', content: 'Hello' } }),
+    ])
+
+    const meta = await readClaudeMeta(f)
+    expect(meta).not.toBeNull()
+    expect(meta!.startedAt).toBe(TS)
+    expect(meta!.cwd).toBe(CWD)
+    expect(meta!.turnCount).toBe(1)
+  })
 })
 
 // ── parseClaudeSession ────────────────────────────────────────────────────────
@@ -136,6 +173,58 @@ describe('parseClaudeSession', () => {
     const session = await parseClaudeSession(f)
     expect(session!.turns).toHaveLength(1)
     expect(session!.turns[0].userMessage).toBe('Real user message')
+  })
+
+  it('strips IDE context tags without dropping the real user prompt', async () => {
+    const f = tmp([
+      baseRecord(),
+      userMsg('u1', 'root', [
+        { type: 'text', text: '<ide_opened_file>The user opened a file.</ide_opened_file>' },
+        { type: 'text', text: '这个项目是不是有个 vscode 插件' },
+      ]),
+      assistantMsg('a1', 'u1', [{ type: 'text', text: '有。' }]),
+    ])
+
+    const session = await parseClaudeSession(f)
+    expect(session).not.toBeNull()
+    expect(session!.turns[0].userMessage).toBe('这个项目是不是有个 vscode 插件')
+  })
+
+  it('keeps image-only user prompts as turns', async () => {
+    const f = tmp([
+      baseRecord(),
+      userMsg('u1', 'root', [{ type: 'image', source: { type: 'base64', media_type: 'image/png', data: 'abc' } }]),
+      assistantMsg('a1', 'u1', [{ type: 'text', text: 'I can see the image.' }]),
+    ])
+
+    const session = await parseClaudeSession(f)
+    expect(session).not.toBeNull()
+    expect(session!.turns[0].userMessage).toBe('[image]')
+    expect(session!.turns[0].assistantMessage).toBe('I can see the image.')
+  })
+
+  it('uses agentId to distinguish parsed sidechain subagent sessions', async () => {
+    const f = tmp([
+      { ...baseRecord(), isSidechain: true, agentId: 'agent-abc', type: 'user', message: { role: 'user', content: 'Subagent prompt' } },
+      assistantMsg('a1', 'root', [{ type: 'text', text: 'Subagent response' }]),
+    ])
+
+    const session = await parseClaudeSession(f)
+    expect(session).not.toBeNull()
+    expect(session!.id).toBe(`${SESSION_ID}:agent-abc`)
+  })
+
+  it('fills parsed session metadata from later timestamped records', async () => {
+    const f = tmp([
+      { type: 'permission-mode', permissionMode: 'default', sessionId: SESSION_ID },
+      baseRecord({ type: 'user', uuid: 'u1', parentUuid: 'root', message: { role: 'user', content: 'Hello' } }),
+      assistantMsg('a1', 'u1', [{ type: 'text', text: 'Hi' }]),
+    ])
+
+    const session = await parseClaudeSession(f)
+    expect(session).not.toBeNull()
+    expect(session!.startedAt).toBe(TS)
+    expect(session!.cwd).toBe(CWD)
   })
 
   it('collects sibling tool branches in a single Claude turn', async () => {

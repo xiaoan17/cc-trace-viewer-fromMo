@@ -10,6 +10,7 @@ const LOCAL_COMMAND_OUTPUT_RE = /^<local-command-(stdout|stderr)>([\s\S]*)<\/loc
 const TASK_NOTIFICATION_RE = /^<task-notification>\s*[\s\S]*<\/task-notification>$/i
 const COMMAND_NAME_RE = /<command-name>([\s\S]*?)<\/command-name>/i
 const COMMAND_ARGS_RE = /<command-args>([\s\S]*?)<\/command-args>/i
+const HIDDEN_USER_CONTEXT_TAG_RE = /<(ide_opened_file|system-reminder)>[\s\S]*?<\/\1>/gi
 
 type ClaudeRecord = {
   type?: string
@@ -17,6 +18,7 @@ type ClaudeRecord = {
   parentUuid?: string | null
   isSidechain?: boolean
   promptId?: string
+  agentId?: string
   subtype?: string
   sessionId?: string
   cwd?: string
@@ -165,13 +167,18 @@ function stripLocalCommandOutput(text: string): string {
 }
 
 function normalizeUserFacingText(text: string): string {
-  const trimmed = text.trim()
+  const trimmed = text.replace(HIDDEN_USER_CONTEXT_TAG_RE, '').trim()
   const taskNotification = parseTaskNotification(trimmed)
   if (taskNotification) return formatTaskNotificationText(taskNotification)
   const command = formatCommandText(trimmed)
   if (command) return command
   if (isLocalCommandOutputText(trimmed)) return stripLocalCommandOutput(trimmed)
   return trimmed
+}
+
+function getClaudeSessionId(record: ClaudeRecord): string {
+  const sessionId = record.sessionId || ''
+  return record.isSidechain && record.agentId ? `${sessionId}:${record.agentId}` : sessionId
 }
 
 function parseTaskNotification(text: string): TaskNotification | null {
@@ -280,7 +287,7 @@ function summarizeSystemRecord(record: ClaudeRecord): { name: string; text: stri
   }
 }
 
-/** Fast meta-only read: only scans first ~20 lines to get session metadata + counts user turns */
+/** Fast meta-only read: streams the file once for session metadata + user turn count. */
 export async function readClaudeMeta(filePath: string): Promise<SessionMeta | null> {
   try {
     const rl = createInterface({ input: fs.createReadStream(filePath), crlfDelay: Infinity })
@@ -290,22 +297,23 @@ export async function readClaudeMeta(filePath: string): Promise<SessionMeta | nu
     let startedAt = ''
     let model = ''
     let turnCount = 0
-    let linesRead = 0
     const metaByUuid = new Map<string, boolean>()
 
     for await (const line of rl) {
       const trimmed = line.trim()
       if (!trimmed) continue
-      linesRead++
 
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const obj = JSON.parse(trimmed) as any
 
         if (!sessionId && obj.sessionId) {
-          sessionId = obj.sessionId
-          cwd = obj.cwd || ''
-          startedAt = obj.timestamp || ''
+          sessionId = getClaudeSessionId(obj)
+        }
+
+        if (obj.sessionId) {
+          if (!cwd && obj.cwd) cwd = obj.cwd
+          if (!startedAt && obj.timestamp) startedAt = obj.timestamp
         }
 
         if (!model && obj.type === 'assistant' && obj.message?.model) {
@@ -339,9 +347,6 @@ export async function readClaudeMeta(filePath: string): Promise<SessionMeta | nu
       } catch {
         // skip
       }
-
-      // Stop early once we have enough data (meta found + reasonable sample)
-      if (sessionId && linesRead > 500) break
     }
 
     rl.close()
@@ -372,13 +377,29 @@ export async function listClaudeSessions(): Promise<string[]> {
   const files: string[] = []
   if (!fs.existsSync(CLAUDE_DIR)) return files
 
+  const walk = (dir: string) => {
+    for (const entry of fs.readdirSync(dir)) {
+      const fullPath = path.join(dir, entry)
+      let stat: fs.Stats
+      try {
+        stat = fs.statSync(fullPath)
+      } catch {
+        continue
+      }
+
+      if (stat.isDirectory()) {
+        walk(fullPath)
+      } else if (fullPath.endsWith('.jsonl')) {
+        files.push(fullPath)
+      }
+    }
+  }
+
   for (const project of fs.readdirSync(CLAUDE_DIR)) {
     const projectDir = path.join(CLAUDE_DIR, project)
     try {
       if (!fs.statSync(projectDir).isDirectory()) continue
-      for (const sf of fs.readdirSync(projectDir)) {
-        if (sf.endsWith('.jsonl')) files.push(path.join(projectDir, sf))
-      }
+      walk(projectDir)
     } catch {
       // skip
     }
@@ -408,6 +429,10 @@ function extractText(content: unknown[]): string {
       if (item.type === 'text') return item.text as string
       if (item.type === 'thinking') return ''
       if (typeof item.text === 'string') return item.text
+      if (item.type === 'image' || item.type === 'image_url') return '[image]'
+      if (item.type === 'document') return '[document]'
+      if (item.type === 'tool_result') return ''
+      if (typeof item.content === 'string') return item.content
       return ''
     })
     .filter(Boolean)
@@ -423,9 +448,9 @@ export async function parseClaudeSession(filePath: string): Promise<TraceSession
     const anyRecord = recs.find((r) => r.sessionId)
     if (!anyRecord) return null
 
-    const sessionId = anyRecord.sessionId as string
-    const cwd = anyRecord.cwd as string
-    const startedAt = anyRecord.timestamp as string
+    const sessionId = getClaudeSessionId(anyRecord)
+    const cwd = recs.find((r) => r.cwd)?.cwd || ''
+    const startedAt = recs.find((r) => r.timestamp)?.timestamp || ''
     const projectPath = filePath.split('/projects/')[1]?.split('/')[0]?.replace(/-/g, '/')
     const model = recs.find((r) => r.type === 'assistant' && r.message?.model)?.message?.model as string | undefined
 
