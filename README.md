@@ -1,5 +1,9 @@
 # Trace Viewer
 
+<p align="center">
+  <img src="./public/logo.png" alt="Trace Viewer logo" width="180" />
+</p>
+
 A web-based viewer for browsing and comparing conversation traces from multiple coding agents: **Claude Code**, **Codex**, and **Gemini CLI**.
 
 ![screenshot placeholder](./docs/screenshot.png)
