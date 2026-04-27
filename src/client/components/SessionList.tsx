@@ -56,11 +56,13 @@ export function SessionList({ selected, onSelect }: {
       <div className="p-6 space-y-6">
         {/* Wordmark */}
         <div className="flex items-center gap-4">
-          <div className="relative w-10 h-10 flex-shrink-0 group">
-            <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 blur-[3px] group-hover:blur-[6px] transition-all duration-500 opacity-80" />
-            <div className="relative z-10 flex items-center justify-center w-full h-full bg-white dark:bg-slate-900 rounded-xl text-text-1 text-xl font-bold border border-white/20 shadow-premium">
-              ⌬
-            </div>
+          <div className="relative w-12 h-12 flex-shrink-0 group">
+            <div className="absolute inset-0 rounded-xl bg-white shadow-premium ring-1 ring-border-2" />
+            <img
+              src="/logo.png"
+              alt="Trace Viewer"
+              className="relative z-10 w-full h-full rounded-xl object-cover object-top transition-transform duration-500 group-hover:scale-105"
+            />
           </div>
           <div className="min-w-0">
             <h1 className="text-base font-extrabold text-text-1 tracking-tight truncate">Trace Viewer</h1>

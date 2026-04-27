@@ -62,12 +62,14 @@ export default function App() {
 
 function EmptyState() {
   return (
-    <div className="flex flex-col items-center justify-center h-full gap-6 select-none bg-surface-0">
-      <div className="relative">
-        <div className="absolute inset-0 bg-accent-user opacity-10 blur-2xl rounded-full" />
-        <div className="relative w-20 h-20 rounded-3xl flex items-center justify-center text-4xl bg-surface-2 border border-border-2 shadow-md">
-          <span className="opacity-30">⌬</span>
-        </div>
+    <div className="flex flex-col items-center justify-center h-full gap-7 select-none bg-surface-0">
+      <div className="relative animate-logo-hop">
+        <div className="absolute inset-x-8 bottom-3 h-10 rounded-full bg-black/10 blur-xl" />
+        <img
+          src="/logo.png"
+          alt="Trace Viewer"
+          className="relative w-56 h-56 rounded-[28px] object-cover object-top shadow-premium ring-1 ring-border-2 bg-white"
+        />
       </div>
       <div className="text-center">
         <h3 className="text-lg font-semibold text-text-1">No session selected</h3>
