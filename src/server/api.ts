@@ -25,7 +25,7 @@ router.get('/sessions', async (_req, res) => {
   for (const filePath of claudeFiles) {
     try {
       const m = await readClaudeMeta(filePath)
-      if (m) metas.push(m)
+      if (m && m.turnCount > 0) metas.push(m)
     } catch { /* skip */ }
   }
 
