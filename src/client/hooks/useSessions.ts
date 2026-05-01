@@ -1,14 +1,18 @@
 import { useState, useEffect } from 'react'
 import type { SessionMeta, TraceSession } from '@shared/types'
 
-export function useSessions() {
+export function useSessions(recentDays: number | null = 7) {
   const [sessions, setSessions] = useState<SessionMeta[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     setLoading(true)
-    fetch('/api/sessions')
+    setError(null)
+    const params = new URLSearchParams()
+    params.set('recentDays', recentDays == null ? 'all' : String(recentDays))
+
+    fetch(`/api/sessions?${params}`)
       .then((r) => r.json())
       .then((data) => {
         setSessions(data)
@@ -18,7 +22,7 @@ export function useSessions() {
         setError(String(err))
         setLoading(false)
       })
-  }, [])
+  }, [recentDays])
 
   return { sessions, loading, error }
 }

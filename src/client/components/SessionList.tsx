@@ -5,6 +5,13 @@ import { SourceIcon } from './SourceIcon'
 import type { SessionMeta, Source } from '@shared/types'
 
 const SOURCES: Source[] = ['claude', 'codex', 'gemini']
+const RANGE_OPTIONS = [
+  { key: '7d', label: '7d', days: 7 },
+  { key: '30d', label: '30d', days: 30 },
+  { key: 'all', label: 'All time', days: null },
+] as const
+
+type RangeKey = typeof RANGE_OPTIONS[number]['key']
 
 function timeAgo(iso: string) {
   try {
@@ -31,7 +38,9 @@ export function SessionList({ selected, onSelect }: {
   selected: SessionMeta | null
   onSelect: (m: SessionMeta) => void
 }) {
-  const { sessions, loading } = useSessions()
+  const [range, setRange] = useState<RangeKey>('7d')
+  const rangeOption = RANGE_OPTIONS.find(option => option.key === range) || RANGE_OPTIONS[0]
+  const { sessions, loading, error } = useSessions(rangeOption.days)
   const [query, setQuery] = useState('')
   const [src, setSrc] = useState<Source | 'all'>('all')
 
@@ -69,7 +78,7 @@ export function SessionList({ selected, onSelect }: {
             <div className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-accent-success animate-pulse" />
               <p className="text-[10px] text-text-4 font-bold uppercase tracking-widest">
-                {loading ? 'Scanning…' : `${sessions.length} sessions`}
+                {loading ? 'Scanning…' : `${rangeOption.label} · ${sessions.length} sessions`}
               </p>
             </div>
           </div>
@@ -102,6 +111,19 @@ export function SessionList({ selected, onSelect }: {
           )}
         </div>
 
+        {/* Time Range */}
+        <div className="flex bg-surface-2 p-1 rounded-xl border border-border-2 shadow-sm">
+          {RANGE_OPTIONS.map(option => (
+            <RangeBtn
+              key={option.key}
+              active={range === option.key}
+              onClick={() => setRange(option.key)}
+            >
+              {option.label}
+            </RangeBtn>
+          ))}
+        </div>
+
         {/* Filters */}
         <div className="flex bg-surface-2 p-1 rounded-xl border border-border-2 shadow-sm">
           <FilterBtn active={src === 'all'} onClick={() => setSrc('all')}>
@@ -126,10 +148,23 @@ export function SessionList({ selected, onSelect }: {
       <div className="flex-1 overflow-y-auto border-t border-border-2 custom-scrollbar px-3 py-4">
         {loading ? (
           <SkeletonList />
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center px-6 py-20 text-center text-accent-error animate-in fade-in duration-500">
+            <div className="text-[11px] font-bold tracking-[0.2em] uppercase opacity-80">Failed to load sessions</div>
+            <div className="mt-2 max-w-[220px] text-xs leading-relaxed opacity-70">{error}</div>
+          </div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-text-4 animate-in fade-in duration-500">
             <div className="text-4xl mb-4 opacity-10">∅</div>
             <div className="text-[11px] font-bold tracking-[0.2em] uppercase opacity-60">No sessions found</div>
+            {range !== 'all' && (
+              <button
+                onClick={() => setRange('all')}
+                className="mt-4 rounded-lg border border-border-2 bg-surface-2 px-3 py-2 text-[10px] font-bold uppercase tracking-widest text-text-3 transition-colors hover:bg-surface-3 hover:text-text-1"
+              >
+                Search all time
+              </button>
+            )}
           </div>
         ) : (
           SOURCES.map(source => {
@@ -163,6 +198,23 @@ export function SessionList({ selected, onSelect }: {
         )}
       </div>
     </div>
+  )
+}
+
+function RangeBtn({ active, onClick, children }: {
+  active: boolean; onClick: () => void; children: React.ReactNode
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex-1 whitespace-nowrap text-[10px] font-bold px-2 py-2 rounded-lg transition-all duration-300 ${
+        active 
+          ? 'bg-surface-0 text-text-1 shadow-md border border-border-2 ring-1 ring-black/5' 
+          : 'text-text-4 hover:text-text-2 hover:bg-surface-0/50'
+      }`}
+    >
+      {children}
+    </button>
   )
 }
 

@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import fs from 'fs'
 import { listClaudeSessions, readClaudeMeta, parseClaudeSession } from './parsers/claude.js'
 import { listCodexSessions, readCodexMeta, parseCodexSession } from './parsers/codex.js'
 import { listGeminiSessions, parseGeminiSession } from './parsers/gemini.js'
@@ -6,15 +7,20 @@ import type { SessionMeta } from '../shared/types.js'
 
 export const router = Router()
 
-// Cache for session list — longer TTL since meta-only scan is fast
-let sessionCache: SessionMeta[] | null = null
-let cacheTime = 0
+// Cache for session list — keyed by time range so "recent" stays fast.
+const sessionCache = new Map<string, { data: SessionMeta[]; time: number }>()
 const CACHE_TTL = 30_000 // 30s
+const DEFAULT_RECENT_DAYS = 7
+const DAY_MS = 24 * 60 * 60 * 1000
 
-router.get('/sessions', async (_req, res) => {
+router.get('/sessions', async (req, res) => {
+  const recentDays = parseRecentDays(req.query.recentDays)
+  const cutoff = recentDays == null ? null : Date.now() - recentDays * DAY_MS
+  const cacheKey = recentDays == null ? 'all' : `recent:${recentDays}`
   const now = Date.now()
-  if (sessionCache && now - cacheTime < CACHE_TTL) {
-    res.json(sessionCache)
+  const cached = sessionCache.get(cacheKey)
+  if (cached && now - cached.time < CACHE_TTL) {
+    res.json(cached.data)
     return
   }
 
@@ -24,8 +30,9 @@ router.get('/sessions', async (_req, res) => {
   const claudeFiles = await listClaudeSessions()
   for (const filePath of claudeFiles) {
     try {
+      if (!fileMayBeRecent(filePath, cutoff)) continue
       const m = await readClaudeMeta(filePath)
-      if (m && m.turnCount > 0) metas.push(m)
+      if (m && m.turnCount > 0 && metaIsRecent(m, cutoff)) metas.push(m)
     } catch { /* skip */ }
   }
 
@@ -33,8 +40,9 @@ router.get('/sessions', async (_req, res) => {
   const codexFiles = listCodexSessions()
   for (const filePath of codexFiles) {
     try {
+      if (!fileMayBeRecent(filePath, cutoff)) continue
       const m = await readCodexMeta(filePath)
-      if (m) metas.push(m)
+      if (m && metaIsRecent(m, cutoff)) metas.push(m)
     } catch { /* skip */ }
   }
 
@@ -42,8 +50,10 @@ router.get('/sessions', async (_req, res) => {
   const geminiFiles = listGeminiSessions()
   for (const filePath of geminiFiles) {
     try {
+      if (!fileMayBeRecent(filePath, cutoff)) continue
       const session = parseGeminiSession(filePath)
       if (!session) continue
+      if (!metaIsRecent(session, cutoff)) continue
       metas.push({
         id: session.id,
         source: 'gemini',
@@ -59,8 +69,7 @@ router.get('/sessions', async (_req, res) => {
 
   metas.sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime())
 
-  sessionCache = metas
-  cacheTime = now
+  sessionCache.set(cacheKey, { data: metas, time: now })
   res.json(metas)
 })
 
@@ -93,3 +102,33 @@ router.get('/sessions/:id', async (req, res) => {
     res.status(500).json({ error: String(err) })
   }
 })
+
+function parseRecentDays(value: unknown): number | null {
+  if (Array.isArray(value)) return parseRecentDays(value[0])
+  if (value == null || value === '') return DEFAULT_RECENT_DAYS
+
+  const raw = String(value).trim().toLowerCase()
+  if (raw === 'all' || raw === '0') return null
+
+  const n = Number(raw)
+  if (!Number.isFinite(n) || n <= 0) return DEFAULT_RECENT_DAYS
+  return Math.min(Math.floor(n), 3650)
+}
+
+function fileMayBeRecent(filePath: string, cutoff: number | null): boolean {
+  if (cutoff == null) return true
+
+  try {
+    return fs.statSync(filePath).mtimeMs >= cutoff
+  } catch {
+    return true
+  }
+}
+
+function metaIsRecent(meta: Pick<SessionMeta, 'startedAt'>, cutoff: number | null): boolean {
+  if (cutoff == null) return true
+
+  const started = new Date(meta.startedAt).getTime()
+  if (!Number.isFinite(started)) return true
+  return started >= cutoff
+}

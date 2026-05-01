@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useSession } from '../hooks/useSessions'
 import { TurnCard } from './TurnCard'
-import { TraceTimeline } from './TraceTimeline'
 import { SourceBadge, getSourceConfig } from './SourceBadge'
 import { SourceIcon } from './SourceIcon'
 import { exportAsJSON, exportAsMarkdown, exportAsHTML } from '../utils/exportTrace'
@@ -16,10 +15,6 @@ export function TraceViewer({ meta }: { meta: SessionMeta }) {
   const config = getSourceConfig(meta.source)
   const totalTools = session?.turns.reduce((n, t) => n + t.steps.filter(s => s.type === 'tool_use').length, 0) ?? 0
   const [exportOpen, setExportOpen] = useState(false)
-  const [viewMode, setViewMode] = useState<'cards' | 'timeline'>(() => {
-    if (typeof window === 'undefined') return 'timeline'
-    return localStorage.getItem('trace-view-mode') === 'cards' ? 'cards' : 'timeline'
-  })
   const exportRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -32,10 +27,6 @@ export function TraceViewer({ meta }: { meta: SessionMeta }) {
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [exportOpen])
-
-  useEffect(() => {
-    localStorage.setItem('trace-view-mode', viewMode)
-  }, [viewMode])
 
   return (
     <div className="flex flex-col h-full bg-surface-0">
@@ -99,32 +90,6 @@ export function TraceViewer({ meta }: { meta: SessionMeta }) {
 
           {/* Action Buttons */}
           <div className="flex flex-wrap items-center gap-3 lg:justify-end">
-            <div className="flex items-center rounded-xl border border-border-2 bg-surface-2 p-1 shadow-sm">
-              <button
-                type="button"
-                title="Show message cards"
-                onClick={() => setViewMode('cards')}
-                className={`rounded-lg px-3 py-1.5 text-xs font-black transition-all ${
-                  viewMode === 'cards'
-                    ? 'bg-surface-0 text-text-1 shadow-sm'
-                    : 'text-text-3 hover:text-text-1'
-                }`}
-              >
-                Cards
-              </button>
-              <button
-                type="button"
-                title="Show linear trace timeline"
-                onClick={() => setViewMode('timeline')}
-                className={`rounded-lg px-3 py-1.5 text-xs font-black transition-all ${
-                  viewMode === 'timeline'
-                    ? 'bg-surface-0 text-text-1 shadow-sm'
-                    : 'text-text-3 hover:text-text-1'
-                }`}
-              >
-                Timeline
-              </button>
-            </div>
             <div className="relative" ref={exportRef}>
               <button
                 className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface-2 border border-border-2 text-text-2 font-bold text-xs hover:bg-surface-3 hover:text-text-1 transition-all active:scale-95 shadow-sm"
@@ -179,12 +144,8 @@ export function TraceViewer({ meta }: { meta: SessionMeta }) {
       </header>
 
       {/* Main Content Area */}
-      <div className={`flex-1 bg-surface-0 ${
-        viewMode === 'timeline'
-          ? 'overflow-hidden p-3 sm:p-6'
-          : 'overflow-y-auto custom-scrollbar px-5 sm:px-10'
-      }`}>
-        <div className={viewMode === 'timeline' ? 'h-full' : 'max-w-5xl mx-auto py-12 pb-40'}>
+      <div className="flex-1 overflow-y-auto custom-scrollbar bg-surface-0 px-5 sm:px-10">
+        <div className="max-w-5xl mx-auto py-12 pb-40">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-40 gap-8">
               <div className="relative w-20 h-20">
@@ -215,7 +176,7 @@ export function TraceViewer({ meta }: { meta: SessionMeta }) {
               </div>
             </div>
           ) : session ? (
-            <div className={viewMode === 'timeline' ? 'h-full animate-slide-up' : 'space-y-16 animate-slide-up'}>
+            <div className="space-y-16 animate-slide-up">
               {session.turns.length === 0 ? (
                 <div className="text-center py-32 text-text-4 bg-surface-1 rounded-[40px] border-2 border-dashed border-border-2 transition-all hover:bg-surface-2 hover:border-border-3 group">
                   <div className="text-6xl mb-6 grayscale opacity-20 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-700">📭</div>
@@ -223,11 +184,9 @@ export function TraceViewer({ meta }: { meta: SessionMeta }) {
                   <p className="text-xs font-bold uppercase tracking-widest opacity-60">This session contains no trace data.</p>
                 </div>
               ) : (
-                viewMode === 'timeline'
-                  ? <TraceTimeline session={session} />
-                  : session.turns.map((turn, i) => (
-                    <TurnCard key={turn.id} turn={turn} index={i} />
-                  ))
+                session.turns.map((turn, i) => (
+                  <TurnCard key={turn.id} turn={turn} index={i} />
+                ))
               )}
             </div>
           ) : null}

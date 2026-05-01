@@ -64,6 +64,12 @@
     --accent-system-border: rgba(100, 116, 139, 0.12);
     --accent-system-soft: #f8fafc;
 
+    --trace-line: rgba(71, 85, 105, 0.36);
+    --trace-node-fill: #f8fafc;
+    --trace-node-branch: #e5e7eb;
+    --trace-node-main: #475569;
+    --trace-panel-shadow: 0 18px 40px -28px rgba(15, 23, 42, 0.42);
+
     /* Layout & UI */
     --radius-sm: 8px;
     --radius-md: 12px;
@@ -126,6 +132,12 @@
     --accent-system-bg: rgba(100, 116, 139, 0.1);
     --accent-system-border: rgba(100, 116, 139, 0.25);
     --accent-system-soft: #111827;
+
+    --trace-line: rgba(148, 163, 184, 0.28);
+    --trace-node-fill: #1f2937;
+    --trace-node-branch: #334155;
+    --trace-node-main: #cbd5e1;
+    --trace-panel-shadow: 0 18px 42px -24px rgba(0, 0, 0, 0.75);
 
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.4);
     --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.5);
@@ -214,64 +226,6 @@
     @apply bg-[var(--bg-1)]/80 backdrop-blur-2xl border-b border-[var(--border-2)] sticky top-0 z-30;
   }
 
-  .trace-timeline-shell {
-    @apply flex h-full min-h-[620px] flex-col overflow-hidden rounded-2xl border border-[var(--border-2)] bg-[var(--bg-0)] shadow-[var(--shadow-md)];
-  }
-
-  .timeline-node {
-    @apply absolute left-2 right-2 rounded-xl border border-[var(--border-2)] p-3 shadow-[var(--shadow-sm)] ring-1 ring-transparent transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--border-3)] hover:shadow-[var(--shadow-md)];
-    background: var(--bg-1);
-    min-height: 138px;
-    backdrop-filter: blur(16px);
-  }
-
-  .timeline-node-selected {
-    @apply border-[var(--accent-tool)] shadow-[var(--shadow-lg)] ring-[var(--accent-tool-border)];
-  }
-
-  .timeline-node-error {
-    @apply border-[var(--accent-error-border)] bg-[var(--accent-error-bg)];
-  }
-
-  .timeline-dot {
-    @apply h-4 w-4 rounded-full border-2 border-[var(--bg-0)] bg-[var(--accent-tool)] shadow-[0_0_0_4px_var(--accent-tool-border),0_0_24px_rgba(59,130,246,0.35)] transition-all duration-200;
-  }
-
-  .timeline-dot-selected {
-    @apply h-5 w-5 bg-[var(--accent-agent)] shadow-[0_0_0_5px_var(--accent-agent-border),0_0_32px_rgba(16,185,129,0.45)];
-  }
-
-  .timeline-dot-error {
-    @apply bg-[var(--accent-error)] shadow-[0_0_0_4px_var(--accent-error-border),0_0_24px_rgba(239,68,68,0.35)];
-  }
-
-  .timeline-kind {
-    @apply inline-flex max-w-full items-center rounded-md border px-2 py-1 font-mono text-[9px] font-black uppercase tracking-[0.16em] leading-none;
-  }
-
-  .timeline-kind-user {
-    @apply border-[var(--accent-user-border)] bg-[var(--accent-user-bg)] text-[var(--accent-user)];
-  }
-
-  .timeline-kind-agent {
-    @apply border-[var(--accent-agent-border)] bg-[var(--accent-agent-bg)] text-[var(--accent-agent)];
-  }
-
-  .timeline-kind-tool {
-    @apply border-[var(--accent-tool-border)] bg-[var(--accent-tool-bg)] text-[var(--accent-tool)];
-  }
-
-  .timeline-kind-thinking {
-    @apply border-[var(--accent-thinking-border)] bg-[var(--accent-thinking-bg)] text-[var(--accent-thinking)];
-  }
-
-  .timeline-kind-system {
-    @apply border-[var(--accent-system-border)] bg-[var(--accent-system-bg)] text-[var(--accent-system)];
-  }
-
-  .timeline-kind-error {
-    @apply border-[var(--accent-error-border)] bg-[var(--accent-error-bg)] text-[var(--accent-error)];
-  }
 }
 
 .custom-scrollbar::-webkit-scrollbar {
