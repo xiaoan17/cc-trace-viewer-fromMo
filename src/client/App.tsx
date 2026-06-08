@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { SessionList } from './components/SessionList'
 import { TraceViewer } from './components/TraceViewer'
+import { assetUrl } from './utils/assets'
 import type { SessionMeta } from '@shared/types'
 
 export default function App() {
@@ -66,7 +67,7 @@ function EmptyState() {
       <div className="relative animate-logo-hop">
         <div className="absolute inset-x-8 bottom-3 h-10 rounded-full bg-black/10 blur-xl" />
         <img
-          src="/logo.png"
+          src={assetUrl('logo.png')}
           alt="Trace Viewer"
           className="relative w-56 h-56 rounded-[28px] object-cover object-top shadow-premium ring-1 ring-border-2 bg-white"
         />

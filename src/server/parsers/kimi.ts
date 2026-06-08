@@ -3,6 +3,7 @@ import os from 'os'
 import path from 'path'
 import { createInterface } from 'readline'
 import type { SessionMeta, TraceSession, TraceStep, TraceTurn, TokenUsage } from '../../shared/types.js'
+import { makeSessionTitle } from './sessionTitle.js'
 
 const KIMI_DIR = path.join(os.homedir(), '.kimi-code')
 const KIMI_SESSIONS_DIR = path.join(KIMI_DIR, 'sessions')
@@ -207,8 +208,10 @@ export function listKimiSessions(): KimiSessionFiles[] {
   return files
 }
 
-async function countKimiTurns(wirePath: string): Promise<number> {
+async function readKimiStats(wirePath: string): Promise<{ turnCount: number; eventCount: number; toolCallCount: number }> {
   let count = 0
+  let eventCount = 0
+  let toolCallCount = 0
   const rl = createInterface({ input: fs.createReadStream(wirePath), crlfDelay: Infinity })
   for await (const line of rl) {
     const trimmed = line.trim()
@@ -218,12 +221,16 @@ async function countKimiTurns(wirePath: string): Promise<number> {
       if (record.type === 'turn.prompt' && extractText(record.input).trim()) {
         count++
       }
+      if (record.type === 'context.append_loop_event' && record.event) {
+        eventCount++
+        if (record.event.type === 'tool.call') toolCallCount++
+      }
     } catch {
       // skip malformed rows
     }
   }
   rl.close()
-  return count
+  return { turnCount: count, eventCount, toolCallCount }
 }
 
 export async function readKimiMeta(files: KimiSessionFiles): Promise<SessionMeta | null> {
@@ -232,8 +239,9 @@ export async function readKimiMeta(files: KimiSessionFiles): Promise<SessionMeta
 
   const index = readIndex().get(files.sessionDir)
   const id = index?.sessionId || getSessionId(files.sessionDir)
-  const turnCount = await countKimiTurns(files.wirePath)
+  const { turnCount, eventCount, toolCallCount } = await readKimiStats(files.wirePath)
   if (turnCount === 0) return null
+  const title = makeSessionTitle(state.title || state.lastPrompt)
 
   return {
     id,
@@ -241,6 +249,10 @@ export async function readKimiMeta(files: KimiSessionFiles): Promise<SessionMeta
     startedAt: state.createdAt,
     cwd: index?.workDir || '',
     projectPath: path.basename(path.dirname(files.sessionDir)),
+    title,
+    summary: title,
+    eventCount: eventCount || undefined,
+    toolCallCount: toolCallCount || undefined,
     model: await readKimiModel(files.wirePath),
     turnCount,
     filePath: files.statePath,
@@ -281,6 +293,8 @@ export async function parseKimiSession(statePath: string): Promise<TraceSession 
   const model = await readKimiModel(wirePath)
   const turns = await parseKimiTurns(wirePath)
   if (turns.length === 0) return null
+  const stats = await readKimiStats(wirePath)
+  const title = makeSessionTitle(state.title || turns[0]?.userMessage || state.lastPrompt)
 
   return {
     id,
@@ -288,6 +302,10 @@ export async function parseKimiSession(statePath: string): Promise<TraceSession 
     startedAt: state.createdAt,
     cwd: index?.workDir || '',
     projectPath: path.basename(path.dirname(sessionDir)),
+    title,
+    summary: title,
+    eventCount: stats.eventCount || undefined,
+    toolCallCount: stats.toolCallCount || undefined,
     model,
     turns,
     filePath: statePath,

@@ -3,6 +3,7 @@ import os from 'os'
 import path from 'path'
 import { createInterface } from 'readline'
 import type { TraceSession, TraceTurn, TraceStep, TokenUsage, SessionMeta } from '../../shared/types.js'
+import { makeSessionTitle } from './sessionTitle.js'
 
 const CODEX_DIR = path.join(os.homedir(), '.codex', 'sessions')
 
@@ -12,12 +13,13 @@ export async function readCodexMeta(filePath: string): Promise<SessionMeta | nul
     const rl = createInterface({ input: fs.createReadStream(filePath), crlfDelay: Infinity })
     let meta: SessionMeta | null = null
     let turnCount = 0
-    let linesRead = 0
+    let eventCount = 0
+    let toolCallCount = 0
+    let firstUserMessage = ''
 
     for await (const line of rl) {
       const trimmed = line.trim()
       if (!trimmed) continue
-      linesRead++
       try {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const obj = JSON.parse(trimmed) as any
@@ -35,12 +37,28 @@ export async function readCodexMeta(filePath: string): Promise<SessionMeta | nul
         if (obj.type === 'event_msg' && obj.payload?.type === 'task_started') {
           turnCount++
         }
+        if (obj.type === 'event_msg' && obj.payload?.type === 'user_message' && !firstUserMessage) {
+          firstUserMessage = obj.payload?.message || ''
+        }
+        if (obj.type === 'response_item') {
+          eventCount++
+          if (
+            obj.payload?.type === 'function_call' ||
+            obj.payload?.type === 'custom_tool_call' ||
+            obj.payload?.type === 'web_search_call'
+          ) {
+            toolCallCount++
+          }
+        }
       } catch { /* skip */ }
-      if (linesRead > 300) break
     }
     rl.close()
     if (!meta) return null
     meta.turnCount = turnCount
+    meta.title = makeSessionTitle(firstUserMessage)
+    meta.summary = meta.title
+    meta.eventCount = eventCount || undefined
+    meta.toolCallCount = toolCallCount || undefined
     return meta
   } catch {
     return null
@@ -77,6 +95,15 @@ export async function parseCodexSession(filePath: string): Promise<TraceSession 
     const cwd = metaRecord.payload?.cwd as string
     const startedAt = metaRecord.payload?.timestamp as string
     const model = metaRecord.payload?.model_provider as string
+    const eventCount = recs.filter((r) => r.type === 'response_item').length
+    const toolCallCount = recs.filter((r) =>
+      r.type === 'response_item' &&
+      (
+        r.payload?.type === 'function_call' ||
+        r.payload?.type === 'custom_tool_call' ||
+        r.payload?.type === 'web_search_call'
+      )
+    ).length
 
     // Group records into turns using event_msg task_started/task_complete
     const turns: TraceTurn[] = []
@@ -228,6 +255,10 @@ export async function parseCodexSession(filePath: string): Promise<TraceSession 
       source: 'codex',
       startedAt,
       cwd,
+      title: makeSessionTitle(turns[0]?.userMessage),
+      summary: makeSessionTitle(turns[0]?.userMessage),
+      eventCount: eventCount || undefined,
+      toolCallCount: toolCallCount || undefined,
       model,
       turns,
       filePath,

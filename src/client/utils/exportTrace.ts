@@ -47,6 +47,10 @@ function shortPath(p = '') {
   return p.replace(/^\/Users\/[^/]+/, '~').replace(/^\/home\/[^/]+/, '~')
 }
 
+function displayTitle(session: TraceSession, meta: SessionMeta) {
+  return session.title || session.summary || meta.title || meta.summary || shortPath(meta.cwd) || 'Root Directory'
+}
+
 function renderToolPair(toolUse: TraceStep, toolResult?: TraceStep): string {
   const inputJson = toolUse.input && Object.keys(toolUse.input).length > 0
     ? `<div class="pair-section"><div class="pair-label">Input</div><pre class="code-block">${esc(JSON.stringify(toolUse.input, null, 2))}</pre></div>`
@@ -163,8 +167,10 @@ function renderTurn(turn: TraceTurn, index: number): string {
 
 function buildHTML(session: TraceSession, meta: SessionMeta): string {
   const c = SOURCE_COLORS[meta.source] ?? SOURCE_COLORS.claude
-  const totalTools = session.turns.reduce(
+  const totalTools = session.toolCallCount ?? meta.toolCallCount ?? session.turns.reduce(
     (n, t) => n + t.steps.filter(s => s.type === 'tool_use').length, 0)
+  const eventCount = session.eventCount ?? meta.eventCount
+  const title = displayTitle(session, meta)
   const turnsHtml = session.turns.map((t, i) => renderTurn(t, i)).join('')
   const date = new Date(meta.startedAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })
 
@@ -173,7 +179,7 @@ function buildHTML(session: TraceSession, meta: SessionMeta): string {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Trace: ${esc(meta.source)} / ${esc(shortPath(meta.cwd))}</title>
+<title>Trace: ${esc(meta.source)} / ${esc(title)}</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: ui-sans-serif, system-ui, sans-serif; background: #0f0f13; color: #e2e2e8; line-height: 1.6; }
@@ -187,6 +193,7 @@ function buildHTML(session: TraceSession, meta: SessionMeta): string {
   .model-badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-family: monospace; font-weight: 700; background: #2a2a36; color: #a0a0b8; border: 1px solid #2a2a36; margin-left: 8px; text-transform: uppercase; letter-spacing: 0.1em; }
   .session-id { font-size: 10px; font-family: monospace; color: #606078; margin-left: 10px; }
   .cwd { font-size: 22px; font-weight: 800; color: #f0f0f8; margin: 8px 0 6px; letter-spacing: -0.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .path { font-size: 11px; font-family: ui-monospace, monospace; color: #70708a; margin: -2px 0 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .stats { display: flex; gap: 10px; flex-wrap: wrap; }
   .stat { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; padding: 4px 10px; border-radius: 8px; background: #23232f; border: 1px solid #2a2a36; color: #a0a0b8; }
   .stat strong { color: #e2e2e8; margin-right: 4px; }
@@ -265,10 +272,12 @@ function buildHTML(session: TraceSession, meta: SessionMeta): string {
         ${meta.model ? `<span class="model-badge">${esc(meta.model.split('/').pop()?.split(':')[0] ?? meta.model)}</span>` : ''}
         <span class="session-id">${esc(meta.id)}</span>
       </div>
-      <div class="cwd">${esc(shortPath(meta.cwd) || 'Root Directory')}</div>
+      <div class="cwd">${esc(title)}</div>
+      ${title !== shortPath(meta.cwd) ? `<div class="path">${esc(shortPath(meta.cwd))}</div>` : ''}
       <div class="stats">
         <span class="stat"><strong>${esc(date)}</strong></span>
-        <span class="stat"><strong>${session.turns.length}</strong> turns</span>
+        <span class="stat"><strong>${session.turns.length}</strong> requests</span>
+        ${eventCount ? `<span class="stat"><strong>${eventCount}</strong> events</span>` : ''}
         ${totalTools > 0 ? `<span class="stat"><strong>${totalTools}</strong> tool calls</span>` : ''}
       </div>
     </div>
@@ -282,19 +291,23 @@ function buildHTML(session: TraceSession, meta: SessionMeta): string {
 }
 
 export function exportAsMarkdown(session: TraceSession, meta: SessionMeta) {
-  const totalTools = session.turns.reduce(
+  const totalTools = session.toolCallCount ?? meta.toolCallCount ?? session.turns.reduce(
     (n, t) => n + t.steps.filter(s => s.type === 'tool_use').length,
     0
   )
+  const eventCount = session.eventCount ?? meta.eventCount
+  const title = displayTitle(session, meta)
   const shortPath = (p = '') => p.replace(/^\/Users\/[^/]+/, '~').replace(/^\/home\/[^/]+/, '~')
 
   const lines: string[] = [
-    `# Trace: ${meta.source.toUpperCase()} / ${shortPath(meta.cwd) || 'Root Directory'}`,
+    `# Trace: ${meta.source.toUpperCase()} / ${title}`,
     '',
     [
+      shortPath(meta.cwd) !== title ? `**Path**: ${shortPath(meta.cwd)}` : null,
       `**Date**: ${new Date(meta.startedAt).toLocaleString()}`,
       meta.model ? `**Model**: ${meta.model.split('/').pop()?.split(':')[0]}` : null,
-      `**Turns**: ${session.turns.length}`,
+      `**Requests**: ${session.turns.length}`,
+      eventCount ? `**Events**: ${eventCount}` : null,
       totalTools > 0 ? `**Tool calls**: ${totalTools}` : null,
       `**ID**: \`${meta.id}\``,
     ].filter(Boolean).join(' | '),

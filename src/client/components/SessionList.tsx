@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from 'react'
 import { useSessions } from '../hooks/useSessions'
 import { getSourceConfig } from './SourceBadge'
 import { SourceIcon } from './SourceIcon'
+import { assetUrl } from '../utils/assets'
 import type { SessionAgeRange, SessionMeta, Source } from '@shared/types'
 
 const SOURCES: Source[] = ['claude', 'codex', 'kimi']
@@ -33,6 +34,10 @@ function shortPath(p = '') {
   return s || '~'
 }
 
+function displayTitle(meta: SessionMeta) {
+  return meta.title || meta.summary || shortPath(meta.cwd)
+}
+
 function shortSessionId(id: string) {
   return id.replace(/^session_/, '').replace(/-/g, '').slice(0, 8) || id.slice(0, 8)
 }
@@ -50,7 +55,12 @@ export function SessionList({ selected, onSelect }: {
     if (src !== 'all' && s.source !== src) return false
     if (query) {
       const q = query.toLowerCase()
-      return (s.cwd || '').toLowerCase().includes(q) || s.id.toLowerCase().includes(q)
+      return (
+        (s.cwd || '').toLowerCase().includes(q) ||
+        (s.title || '').toLowerCase().includes(q) ||
+        (s.summary || '').toLowerCase().includes(q) ||
+        s.id.toLowerCase().includes(q)
+      )
     }
     return true
   }), [sessions, query, src])
@@ -77,7 +87,7 @@ export function SessionList({ selected, onSelect }: {
           <div className="relative w-12 h-12 flex-shrink-0 group">
             <div className="absolute inset-0 rounded-xl bg-white shadow-premium ring-1 ring-border-2" />
             <img
-              src="/logo.png"
+              src={assetUrl('logo.png')}
               alt="Trace Viewer"
               className="relative z-10 w-full h-full rounded-xl object-cover object-top transition-transform duration-500 group-hover:scale-105"
             />
@@ -219,6 +229,8 @@ function SessionRow({ meta, active, onClick }: {
 }) {
   const config = getSourceConfig(meta.source)
   const shortId = shortSessionId(meta.id)
+  const title = displayTitle(meta)
+  const path = shortPath(meta.cwd)
 
   return (
     <button
@@ -247,15 +259,24 @@ function SessionRow({ meta, active, onClick }: {
         {/* Content */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2 mb-1.5">
-            <h4 className={`text-xs font-mono truncate transition-colors duration-300 ${active ? 'text-text-1 font-bold' : 'text-text-2 group-hover:text-text-1'}`}>
-              {shortPath(meta.cwd)}
+            <h4
+              className={`text-xs truncate transition-colors duration-300 ${active ? 'text-text-1 font-bold' : 'text-text-2 group-hover:text-text-1'}`}
+              title={title}
+            >
+              {title}
             </h4>
             <span className="text-[10px] font-bold text-text-4 tabular-nums opacity-60">
               {timeAgo(meta.startedAt)}
             </span>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          {title !== path && (
+            <div className="mb-1.5 text-[10px] text-text-4 font-mono truncate opacity-70" title={meta.cwd}>
+              {path}
+            </div>
+          )}
+
+          <div className="flex items-center gap-2.5 min-w-0">
             <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded transition-colors duration-300 ${
               active 
                 ? 'bg-accent-user/10 text-accent-user border border-accent-user/20' 
@@ -265,8 +286,14 @@ function SessionRow({ meta, active, onClick }: {
             </span>
             <div className="flex items-center gap-1.5 text-[10px] text-text-4 font-bold">
               <span className={`transition-colors ${active ? 'text-text-2' : 'text-text-3'}`}>{meta.turnCount}</span>
-              <span className="opacity-40 uppercase text-[9px] tracking-wider">turns</span>
+              <span className="opacity-40 uppercase text-[9px] tracking-wider">req</span>
             </div>
+            {meta.eventCount ? (
+              <div className="flex items-center gap-1.5 text-[10px] text-text-4 font-bold">
+                <span className={`transition-colors ${active ? 'text-text-2' : 'text-text-3'}`}>{meta.eventCount}</span>
+                <span className="opacity-40 uppercase text-[9px] tracking-wider">events</span>
+              </div>
+            ) : null}
             {meta.model && (
               <div className="flex items-center gap-1.5 overflow-hidden">
                 <span className="w-1 h-1 rounded-full bg-border-3" />

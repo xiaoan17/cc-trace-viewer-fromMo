@@ -1,12 +1,11 @@
-import express from 'express'
-import { router } from './api.js'
+import type { Server } from 'http'
+import { createServerApp } from './app.js'
 
-const app = express()
-const PORT = 3001
+export function startServer(port = Number(process.env.PORT) || 3001): Server {
+  const app = createServerApp()
+  return app.listen(port, () => {
+    console.log(`Trace Viewer API running at http://localhost:${port}`)
+  })
+}
 
-app.use(express.json())
-app.use('/api', router)
-
-app.listen(PORT, () => {
-  console.log(`Trace Viewer API running at http://localhost:${PORT}`)
-})
+startServer()

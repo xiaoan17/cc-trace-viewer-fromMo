@@ -1,5 +1,6 @@
 import { useId } from 'react'
 import type { Source } from '@shared/types'
+import { assetUrl } from '../utils/assets'
 
 export function SourceIcon({ source, className }: { source: Source; className?: string }) {
   const id = useId().replace(/:/g, '')
@@ -50,7 +51,7 @@ export function SourceIcon({ source, className }: { source: Source; className?: 
   if (source === 'kimi') {
     return (
       <img
-        src="/kimi-logo.png"
+        src={assetUrl('kimi-logo.png')}
         alt=""
         className={className}
         aria-hidden="true"

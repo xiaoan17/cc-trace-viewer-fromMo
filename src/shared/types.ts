@@ -7,6 +7,10 @@ export interface TraceSession {
   startedAt: string
   cwd: string
   projectPath?: string
+  title?: string
+  summary?: string
+  eventCount?: number
+  toolCallCount?: number
   model?: string
   turns: TraceTurn[]
   filePath: string
@@ -18,6 +22,10 @@ export interface SessionMeta {
   startedAt: string
   cwd: string
   projectPath?: string
+  title?: string
+  summary?: string
+  eventCount?: number
+  toolCallCount?: number
   model?: string
   turnCount: number
   filePath: string

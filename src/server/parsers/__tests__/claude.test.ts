@@ -68,6 +68,7 @@ describe('readClaudeMeta', () => {
     expect(meta!.startedAt).toBe(TS)
     expect(meta!.source).toBe('claude')
     expect(meta!.turnCount).toBe(2)
+    expect(meta!.title).toBe('Hello')
   })
 
   it('returns null when sessionId is missing', async () => {
@@ -161,6 +162,9 @@ describe('parseClaudeSession', () => {
     const t2 = session!.turns[1]
     expect(t2.userMessage).toBe('Thanks')
     expect(t2.assistantMessage).toBe('You are welcome.')
+    expect(session!.title).toBe('What files are here?')
+    expect(session!.eventCount).toBe(3)
+    expect(session!.toolCallCount).toBe(1)
   })
 
   it('filters out system-injected messages', async () => {

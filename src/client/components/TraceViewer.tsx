@@ -10,6 +10,10 @@ function shortPath(p = '') {
   return p.replace(/^\/Users\/[^/]+/, '~').replace(/^\/home\/[^/]+/, '~')
 }
 
+function displayTitle(meta: SessionMeta) {
+  return meta.title || meta.summary || shortPath(meta.cwd) || 'Root Directory'
+}
+
 function shortSessionId(id: string) {
   return id.replace(/^session_/, '').replace(/-/g, '').slice(0, 10) || id.slice(0, 10)
 }
@@ -17,7 +21,11 @@ function shortSessionId(id: string) {
 export function TraceViewer({ meta }: { meta: SessionMeta }) {
   const { session, loading, error } = useSession(meta)
   const config = getSourceConfig(meta.source)
-  const totalTools = session?.turns.reduce((n, t) => n + t.steps.filter(s => s.type === 'tool_use').length, 0) ?? 0
+  const totalTools = session?.toolCallCount ?? meta.toolCallCount ?? session?.turns.reduce((n, t) => n + t.steps.filter(s => s.type === 'tool_use').length, 0) ?? 0
+  const requestCount = session?.turns.length ?? meta.turnCount
+  const eventCount = session?.eventCount ?? meta.eventCount
+  const title = session?.title || session?.summary || displayTitle(meta)
+  const path = shortPath(session?.cwd || meta.cwd)
   const [exportOpen, setExportOpen] = useState(false)
   const exportRef = useRef<HTMLDivElement>(null)
 
@@ -69,9 +77,14 @@ export function TraceViewer({ meta }: { meta: SessionMeta }) {
                 </span>
               </div>
               
-              <h2 className="text-xl font-extrabold text-text-1 truncate tracking-tight font-sans leading-tight">
-                {shortPath(meta.cwd) || 'Root Directory'}
+              <h2 className="text-xl font-extrabold text-text-1 truncate tracking-tight font-sans leading-tight" title={title}>
+                {title}
               </h2>
+              {path && title !== path && (
+                <div className="text-[10px] font-mono text-text-4 truncate opacity-75" title={session?.cwd || meta.cwd}>
+                  {path}
+                </div>
+              )}
 
               <div className="flex items-center gap-2 text-[10px] text-text-3 font-bold uppercase tracking-wider">
                 <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-surface-2 border border-border-1">
@@ -81,9 +94,14 @@ export function TraceViewer({ meta }: { meta: SessionMeta }) {
                   {new Date(meta.startedAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
                 </div>
                 <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-surface-2 border border-border-1">
-                  <span className="text-text-1">{meta.turnCount}</span> turns
+                  <span className="text-text-1">{requestCount}</span> requests
                 </div>
-                {session && totalTools > 0 && (
+                {eventCount ? (
+                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-surface-2 border border-border-1">
+                    <span className="text-text-1">{eventCount}</span> events
+                  </div>
+                ) : null}
+                {totalTools > 0 && (
                   <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-surface-2 border border-border-1">
                     <span className="text-text-1">{totalTools}</span> tool calls
                   </div>

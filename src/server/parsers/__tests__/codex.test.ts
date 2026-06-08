@@ -55,6 +55,8 @@ describe('readCodexMeta', () => {
     const f = tmp([
       sessionMeta(),
       eventMsg('task_started', { turn_id: 't1' }),
+      eventMsg('user_message', { message: 'Summarize this repo' }),
+      responseItem({ type: 'function_call', name: 'exec_command', arguments: '{"cmd":"ls"}', call_id: 'call-1' }),
       eventMsg('task_started', { turn_id: 't2' }),
     ])
     const meta = await readCodexMeta(f)
@@ -63,6 +65,9 @@ describe('readCodexMeta', () => {
     expect(meta!.cwd).toBe(CWD)
     expect(meta!.source).toBe('codex')
     expect(meta!.turnCount).toBe(2)
+    expect(meta!.title).toBe('Summarize this repo')
+    expect(meta!.eventCount).toBe(1)
+    expect(meta!.toolCallCount).toBe(1)
   })
 
   it('returns null when session_meta is missing', async () => {

@@ -3,6 +3,7 @@ import os from 'os'
 import path from 'path'
 import { createInterface } from 'readline'
 import type { SessionMeta, TraceSession, TraceTurn, TraceStep, TokenUsage } from '../../shared/types.js'
+import { makeSessionTitle } from './sessionTitle.js'
 
 const CLAUDE_DIR = path.join(os.homedir(), '.claude', 'projects')
 const INTERNAL_USER_MESSAGE_RE = /^<(local-command-caveat|bash-input|bash-stdout|bash-stderr|environment_details)>/i
@@ -297,6 +298,9 @@ export async function readClaudeMeta(filePath: string): Promise<SessionMeta | nu
     let startedAt = ''
     let model = ''
     let turnCount = 0
+    let eventCount = 0
+    let toolCallCount = 0
+    let firstUserText = ''
     const metaByUuid = new Map<string, boolean>()
 
     for await (const line of rl) {
@@ -320,6 +324,12 @@ export async function readClaudeMeta(filePath: string): Promise<SessionMeta | nu
           model = obj.message.model
         }
 
+        if (obj.type === 'assistant' && Array.isArray(obj.message?.content)) {
+          for (const item of obj.message.content) {
+            if (item?.type === 'tool_use') toolCallCount++
+          }
+        }
+
         if (obj.uuid) metaByUuid.set(obj.uuid, obj.isMeta === true)
 
         // Count user turns (non-tool-result user messages)
@@ -337,8 +347,13 @@ export async function readClaudeMeta(filePath: string): Promise<SessionMeta | nu
             const isCommand = formatCommandText(rawText.trim())
             if (text.trim() && !INTERNAL_USER_MESSAGE_RE.test(rawText.trim()) && !isLocalCommandOutputText(rawText.trim()) && !isTaskNotificationText(rawText.trim()) && (!parentIsMeta || !!isCommand) && obj.isMeta !== true) {
               turnCount++
+              if (!firstUserText) firstUserText = text
             }
           }
+        }
+
+        if (obj.type === 'assistant' || obj.type === 'system' || obj.type === 'queue-operation') {
+          eventCount++
         }
 
         if (obj.uuid && /^<local-command-caveat>/i.test((typeof obj.message?.content === 'string' ? obj.message.content : '').trim())) {
@@ -364,6 +379,10 @@ export async function readClaudeMeta(filePath: string): Promise<SessionMeta | nu
       startedAt,
       cwd,
       projectPath,
+      title: makeSessionTitle(firstUserText),
+      summary: makeSessionTitle(firstUserText),
+      eventCount: eventCount || undefined,
+      toolCallCount: toolCallCount || undefined,
       model: model || undefined,
       turnCount,
       filePath,
@@ -453,6 +472,14 @@ export async function parseClaudeSession(filePath: string): Promise<TraceSession
     const startedAt = recs.find((r) => r.timestamp)?.timestamp || ''
     const projectPath = filePath.split('/projects/')[1]?.split('/')[0]?.replace(/-/g, '/')
     const model = recs.find((r) => r.type === 'assistant' && r.message?.model)?.message?.model as string | undefined
+    const eventCount = recs.filter((r) => r.type === 'assistant' || r.type === 'system' || r.type === 'queue-operation').length
+    const toolCallCount = recs.reduce((count, record) => {
+      if (record.type !== 'assistant' || !Array.isArray(record.message?.content)) return count
+      return count + record.message.content.filter((item) => {
+        const block = item as Record<string, unknown>
+        return block.type === 'tool_use'
+      }).length
+    }, 0)
 
     const indexedRecs = recs.map((record, index) => ({ ...record, _index: index }))
     const recordByUuid = new Map(indexedRecs.filter((record) => record.uuid).map((record) => [record.uuid as string, record]))
@@ -668,7 +695,22 @@ export async function parseClaudeSession(filePath: string): Promise<TraceSession
 
     if (turns.length === 0) return null
 
-    return { id: sessionId, source: 'claude', startedAt, cwd, projectPath, model, turns, filePath }
+    const title = makeSessionTitle(turns[0]?.userMessage)
+
+    return {
+      id: sessionId,
+      source: 'claude',
+      startedAt,
+      cwd,
+      projectPath,
+      title,
+      summary: title,
+      eventCount: eventCount || undefined,
+      toolCallCount: toolCallCount || undefined,
+      model,
+      turns,
+      filePath,
+    }
   } catch (err) {
     console.error(`Failed to parse Claude session ${filePath}:`, err)
     return null

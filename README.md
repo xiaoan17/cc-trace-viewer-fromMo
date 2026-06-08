@@ -41,9 +41,26 @@ npm run dev
 
 Open [http://localhost:5173](http://localhost:5173).
 
-On macOS, you can also double-click [Trace Viewer.command](/Users/koblod/workspace/workspace_js/trace-viewer2/Trace Viewer.command). It starts the local servers and opens the app in your default browser once the frontend is ready.
+On macOS, you can also double-click [Trace Viewer.command](/Users/anbc/Desktop/trace_viewer/Trace%20Viewer.command). It starts the local servers and opens the app in your default browser once the frontend is ready.
 
 The API server runs on port 3001; the Vite dev server proxies `/api` requests to it automatically.
+
+## Desktop App
+
+Build and run the Electron desktop app locally:
+
+```bash
+npm run app:dev
+```
+
+Build a macOS `.app` bundle:
+
+```bash
+npm run app:build
+open "release/mac-arm64/Trace Viewer.app"
+```
+
+The desktop app starts its own local API server internally, so it does not require a separate Vite or Express dev server.
 
 ## Scripts
 
@@ -55,6 +72,9 @@ The API server runs on port 3001; the Vite dev server proxies `/api` requests to
 | `npm run dev` | Start both API server and Vite dev server |
 | `npm run server:dev` | Start only the API server with hot-reload |
 | `npm run build` | Type-check and build for production |
+| `npm run app:dev` | Build and launch the Electron app locally |
+| `npm run app:build` | Build a macOS `.app` bundle in `release/mac-arm64` |
+| `npm run app:dist` | Build macOS distributables with electron-builder |
 | `npm run preview` | Preview the production build |
 
 ## Tech Stack

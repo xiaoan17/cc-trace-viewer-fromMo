@@ -64,6 +64,8 @@ describe('readKimiMeta', () => {
     expect(meta!.source).toBe('kimi')
     expect(meta!.startedAt).toBe('2024-01-01T10:00:00.000Z')
     expect(meta!.turnCount).toBe(1)
+    expect(meta!.title).toBe('Test session')
+    expect(meta!.eventCount).toBe(1)
     expect(meta!.model).toBe('moonshot/kimi-k2')
     expect(meta!.filePath).toBe(files.statePath)
   })
@@ -91,6 +93,9 @@ describe('parseKimiSession', () => {
     const session = await parseKimiSession(statePath)
     expect(session).not.toBeNull()
     expect(session!.source).toBe('kimi')
+    expect(session!.title).toBe('Test session')
+    expect(session!.eventCount).toBe(7)
+    expect(session!.toolCallCount).toBe(1)
     expect(session!.turns).toHaveLength(1)
 
     const turn = session!.turns[0]

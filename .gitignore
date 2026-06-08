@@ -1,6 +1,10 @@
 node_modules
 dist
 dist-ssr
+dist-electron
+release
+build/icon.icns
+build/icon.iconset
 *.local
 
 # TypeScript
