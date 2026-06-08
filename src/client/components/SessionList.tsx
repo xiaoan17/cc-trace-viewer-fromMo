@@ -1,10 +1,16 @@
-import { useState, useMemo } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useSessions } from '../hooks/useSessions'
 import { getSourceConfig } from './SourceBadge'
 import { SourceIcon } from './SourceIcon'
-import type { SessionMeta, Source } from '@shared/types'
+import type { SessionAgeRange, SessionMeta, Source } from '@shared/types'
 
-const SOURCES: Source[] = ['claude', 'codex', 'gemini']
+const SOURCES: Source[] = ['claude', 'codex', 'kimi']
+const AGE_RANGES: Array<{ value: SessionAgeRange; label: string }> = [
+  { value: '1d', label: '1d' },
+  { value: '7d', label: '7d' },
+  { value: '30d', label: '30d' },
+  { value: 'older', label: 'Other' },
+]
 
 function timeAgo(iso: string) {
   try {
@@ -27,11 +33,16 @@ function shortPath(p = '') {
   return s || '~'
 }
 
+function shortSessionId(id: string) {
+  return id.replace(/^session_/, '').replace(/-/g, '').slice(0, 8) || id.slice(0, 8)
+}
+
 export function SessionList({ selected, onSelect }: {
   selected: SessionMeta | null
-  onSelect: (m: SessionMeta) => void
+  onSelect: (m: SessionMeta | null) => void
 }) {
-  const { sessions, loading } = useSessions()
+  const [ageRange, setAgeRange] = useState<SessionAgeRange>('1d')
+  const { sessions, loading } = useSessions(ageRange)
   const [query, setQuery] = useState('')
   const [src, setSrc] = useState<Source | 'all'>('all')
 
@@ -43,6 +54,13 @@ export function SessionList({ selected, onSelect }: {
     }
     return true
   }), [sessions, query, src])
+
+  useEffect(() => {
+    if (!selected || loading) return
+    if (!sessions.some(s => s.filePath === selected.filePath)) {
+      onSelect(null)
+    }
+  }, [sessions, loading, selected, onSelect])
 
   const counts = useMemo(() => {
     const m: Record<string, number> = {}
@@ -102,7 +120,20 @@ export function SessionList({ selected, onSelect }: {
           )}
         </div>
 
-        {/* Filters */}
+        {/* Time Range */}
+        <div className="grid grid-cols-4 gap-1 bg-surface-2 p-1 rounded-xl border border-border-2 shadow-sm">
+          {AGE_RANGES.map(range => (
+            <FilterBtn
+              key={range.value}
+              active={ageRange === range.value}
+              onClick={() => setAgeRange(range.value)}
+            >
+              {range.label}
+            </FilterBtn>
+          ))}
+        </div>
+
+        {/* Source Filters */}
         <div className="flex bg-surface-2 p-1 rounded-xl border border-border-2 shadow-sm">
           <FilterBtn active={src === 'all'} onClick={() => setSrc('all')}>
             All <span className="ml-1 opacity-40 font-mono">{sessions.length}</span>
@@ -187,7 +218,7 @@ function SessionRow({ meta, active, onClick }: {
   meta: SessionMeta; active: boolean; onClick: () => void
 }) {
   const config = getSourceConfig(meta.source)
-  const shortId = meta.id.replace(/-/g, '').slice(0, 8)
+  const shortId = shortSessionId(meta.id)
 
   return (
     <button

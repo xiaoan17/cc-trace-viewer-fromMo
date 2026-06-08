@@ -2,7 +2,7 @@
 
 ## 简介
 
-TracerViewer 是一款用于浏览和分析 AI 编程助手执行轨迹的可视化工具，支持同时查看来自 **Claude Code**、**Codex** 和 **Gemini CLI** 三个平台的对话会话记录。通过统一的数据模型，你可以清晰地看到每一次人机交互的完整过程：用户指令、模型思考、工具调用、执行结果以及最终回复。
+TracerViewer 是一款用于浏览和分析 AI 编程助手执行轨迹的可视化工具，支持同时查看来自 **Claude Code**、**Codex** 和 **Kimi Code** 的对话会话记录。通过统一的数据模型，你可以清晰地看到每一次人机交互的完整过程：用户指令、模型思考、工具调用、执行结果以及最终回复。
 
 ---
 
@@ -55,7 +55,7 @@ npm run build
 |-------------|--------------------------------------|--------|
 | Claude Code | `~/.claude/projects/**/*.jsonl`       | JSONL  |
 | Codex       | `~/.codex/sessions/**/*.jsonl`        | JSONL  |
-| Gemini CLI  | `~/.gemini/tmp/**/chats/*.json`       | JSON   |
+| Kimi Code   | `~/.kimi-code/sessions/**/state.json` + `agents/main/wire.jsonl` | JSON + JSONL |
 
 > 工具启动时会自动遍历上述目录，解析会话文件并统一转换为内部数据格式。
 
@@ -70,7 +70,7 @@ npm run build
 │   会话列表（左栏）│              轨迹详情（右栏）              │
 │                 │                                          │
 │  [搜索框]        │  [会话头部：来源、模型、时间、统计]         │
-│  [来源过滤标签]   │                                          │
+│  [时间/来源过滤]   │                                          │
 │                 │  Turn 1                                  │
 │  Claude Code    │    User: ...                             │
 │  > 会话 #a1b2   │    [工具调用区]                           │
@@ -96,16 +96,29 @@ npm run build
 
 点击搜索框右侧的 `×` 按钮可清空搜索词。
 
+### 时间过滤
+
+搜索框下方第一组按钮用于限制加载范围：
+
+| 按钮 | 作用 |
+|------|------|
+| 1d | 只加载 1 天内的会话（默认） |
+| 7d | 加载 7 天内的会话 |
+| 30d | 加载 30 天内的会话 |
+| Other | 加载 30 天以前的会话 |
+
+该过滤会传递到后端扫描逻辑中，用于减少初始文件扫描和解析量。
+
 ### 来源过滤
 
-搜索框下方有四个过滤按钮：
+时间过滤下方是来源过滤按钮：
 
 | 按钮 | 作用 |
 |------|------|
 | All  | 显示所有来源的会话（默认） |
 | Claude Code 图标 | 只显示 Claude Code 会话 |
 | Codex 图标 | 只显示 Codex 会话 |
-| Gemini CLI 图标 | 只显示 Gemini CLI 会话 |
+| Kimi Code 图标 | 只显示 Kimi Code 会话 |
 
 按钮上的数字为对应来源的会话总数。再次点击已激活的来源按钮可取消过滤，回到 All 视图。
 
@@ -134,7 +147,7 @@ npm run build
 
 选中会话后，右栏顶部显示该会话的概要信息：
 
-- **来源标签**：Claude Code / Codex / Gemini CLI（带对应颜色）
+- **来源标签**：Claude Code / Codex / Kimi Code（带对应颜色）
 - **模型标识**：所使用的模型名称
 - **会话 ID**：完整 ID，可选中复制
 - **工作目录**：项目根路径
@@ -214,7 +227,7 @@ npm run build
 |------|------|------|
 | Claude Code | 橙色 | `#c2410c` |
 | Codex | 蓝色 | `#1d4ed8` |
-| Gemini CLI | 紫色 | `#6d28d9` |
+| Kimi Code | 绿色 | `#047857` |
 
 步骤类型也有对应配色：工具调用为蓝绿色，思考过程为金色，成功结果为绿色，错误结果为红色。
 
@@ -251,7 +264,7 @@ TraceSession
 
 - `~/.claude/projects/` — Claude Code
 - `~/.codex/sessions/` — Codex
-- `~/.gemini/tmp/` — Gemini CLI
+- `~/.kimi-code/sessions/` — Kimi Code
 
 确保 AI 工具已运行过至少一次并产生了会话记录。
 

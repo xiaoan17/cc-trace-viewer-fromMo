@@ -10,6 +10,10 @@ function shortPath(p = '') {
   return p.replace(/^\/Users\/[^/]+/, '~').replace(/^\/home\/[^/]+/, '~')
 }
 
+function shortSessionId(id: string) {
+  return id.replace(/^session_/, '').replace(/-/g, '').slice(0, 10) || id.slice(0, 10)
+}
+
 export function TraceViewer({ meta }: { meta: SessionMeta }) {
   const { session, loading, error } = useSession(meta)
   const config = getSourceConfig(meta.source)
@@ -31,56 +35,56 @@ export function TraceViewer({ meta }: { meta: SessionMeta }) {
   return (
     <div className="flex flex-col h-full bg-surface-0">
       {/* Premium Header */}
-      <header className="flex-shrink-0 z-20 bg-surface-1/70 backdrop-blur-2xl border-b border-border-2 px-10 py-8 shadow-sm">
-        <div className="max-w-6xl mx-auto flex items-start justify-between gap-8">
-          <div className="flex items-start gap-6 min-w-0">
+      <header className="flex-shrink-0 z-20 bg-surface-1/80 backdrop-blur-2xl border-b border-border-2 px-8 py-5 shadow-sm">
+        <div className="max-w-6xl mx-auto flex items-start justify-between gap-6">
+          <div className="flex items-start gap-4 min-w-0">
             {/* Source Icon with Premium Glow */}
             <div className="relative group flex-shrink-0">
               <div 
-                className="absolute -inset-1 rounded-2xl blur-xl opacity-20 group-hover:opacity-40 transition-opacity duration-500" 
+                className="absolute -inset-1 rounded-xl blur-lg opacity-15 group-hover:opacity-30 transition-opacity duration-500"
                 style={{ backgroundColor: config.color }} 
               />
               <div 
-                className="relative w-16 h-16 rounded-2xl flex items-center justify-center border-2 shadow-premium transition-all duration-500 group-hover:scale-105 group-hover:rotate-3"
+                className="relative w-12 h-12 rounded-xl flex items-center justify-center border shadow-premium transition-all duration-500 group-hover:scale-105"
                 style={{ 
                   backgroundColor: 'var(--bg-0)',
                   borderColor: config.badgeBorder,
                   color: config.color 
                 }}
               >
-                <SourceIcon source={meta.source} className="w-9 h-9" />
+                <SourceIcon source={meta.source} className="w-7 h-7" />
               </div>
             </div>
 
-            <div className="min-w-0 space-y-2.5">
-              <div className="flex items-center gap-3 flex-wrap">
+            <div className="min-w-0 space-y-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <SourceBadge source={meta.source} />
                 {meta.model && (
-                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-surface-3 text-text-2 border border-border-1 uppercase tracking-widest shadow-sm">
+                  <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-md bg-surface-3 text-text-2 border border-border-1 uppercase tracking-wider shadow-sm">
                     {meta.model.split('/').pop()?.split(':')[0]}
                   </span>
                 )}
-                <span className="text-[10px] font-mono text-text-4 select-all opacity-60 hover:opacity-100 transition-opacity cursor-help" title="Session ID">
-                  {meta.id}
+                <span className="text-[9px] font-mono text-text-4 select-all opacity-60 hover:opacity-100 transition-opacity cursor-help" title={meta.id}>
+                  #{shortSessionId(meta.id)}
                 </span>
               </div>
               
-              <h2 className="text-2xl font-extrabold text-text-1 truncate tracking-tight font-sans">
+              <h2 className="text-xl font-extrabold text-text-1 truncate tracking-tight font-sans leading-tight">
                 {shortPath(meta.cwd) || 'Root Directory'}
               </h2>
 
-              <div className="flex items-center gap-4 text-[11px] text-text-3 font-bold uppercase tracking-widest">
-                <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-surface-2 border border-border-1">
-                  <svg className="w-3.5 h-3.5 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <div className="flex items-center gap-2 text-[10px] text-text-3 font-bold uppercase tracking-wider">
+                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-surface-2 border border-border-1">
+                  <svg className="w-3 h-3 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   {new Date(meta.startedAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
                 </div>
-                <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-surface-2 border border-border-1">
+                <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-surface-2 border border-border-1">
                   <span className="text-text-1">{meta.turnCount}</span> turns
                 </div>
                 {session && totalTools > 0 && (
-                  <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-surface-2 border border-border-1">
+                  <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-surface-2 border border-border-1">
                     <span className="text-text-1">{totalTools}</span> tool calls
                   </div>
                 )}
@@ -92,7 +96,7 @@ export function TraceViewer({ meta }: { meta: SessionMeta }) {
           <div className="hidden sm:flex items-center gap-3">
             <div className="relative" ref={exportRef}>
               <button
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-surface-2 border border-border-2 text-text-2 font-bold text-xs hover:bg-surface-3 hover:text-text-1 transition-all active:scale-95 shadow-sm"
+                className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-surface-2 border border-border-2 text-text-2 font-bold text-xs hover:bg-surface-3 hover:text-text-1 transition-all active:scale-95 shadow-sm"
                 onClick={() => setExportOpen(x => !x)}
                 disabled={!session}
               >

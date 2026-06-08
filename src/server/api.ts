@@ -1,20 +1,67 @@
 import { Router } from 'express'
+import fs from 'fs'
 import { listClaudeSessions, readClaudeMeta, parseClaudeSession } from './parsers/claude.js'
 import { listCodexSessions, readCodexMeta, parseCodexSession } from './parsers/codex.js'
-import { listGeminiSessions, parseGeminiSession } from './parsers/gemini.js'
-import type { SessionMeta } from '../shared/types.js'
+import { listKimiSessions, readKimiMeta, parseKimiSession } from './parsers/kimi.js'
+import { parseGeminiSession } from './parsers/gemini.js'
+import type { SessionAgeRange, SessionMeta } from '../shared/types.js'
 
 export const router = Router()
 
 // Cache for session list — longer TTL since meta-only scan is fast
-let sessionCache: SessionMeta[] | null = null
-let cacheTime = 0
+const sessionCache = new Map<SessionAgeRange, { metas: SessionMeta[]; cacheTime: number }>()
 const CACHE_TTL = 30_000 // 30s
+const DAY_MS = 24 * 60 * 60 * 1000
 
-router.get('/sessions', async (_req, res) => {
+function parseAgeRange(value: unknown): SessionAgeRange {
+  return value === '7d' || value === '30d' || value === 'older' ? value : '1d'
+}
+
+function ageLimitMs(age: Exclude<SessionAgeRange, 'older'>): number {
+  return age === '1d' ? DAY_MS : age === '7d' ? 7 * DAY_MS : 30 * DAY_MS
+}
+
+function fileMayMatchAgeRange(filePath: string, age: SessionAgeRange, now: number): boolean {
+  if (age === 'older') return true
+
+  try {
+    return now - fs.statSync(filePath).mtimeMs <= ageLimitMs(age)
+  } catch {
+    return true
+  }
+}
+
+function metaMatchesAgeRange(meta: SessionMeta, age: SessionAgeRange, now: number): boolean {
+  const startedAtMs = new Date(meta.startedAt).getTime()
+  if (!Number.isFinite(startedAtMs)) return false
+
+  const elapsed = now - startedAtMs
+  if (elapsed < 0) return true
+  if (age === 'older') return elapsed > 30 * DAY_MS
+  return elapsed <= ageLimitMs(age)
+}
+
+async function pushMetaIfMatching(
+  metas: SessionMeta[],
+  filePath: string,
+  age: SessionAgeRange,
+  now: number,
+  readMeta: (filePath: string) => Promise<SessionMeta | null>,
+) {
+  if (!fileMayMatchAgeRange(filePath, age, now)) return
+
+  const meta = await readMeta(filePath)
+  if (meta && metaMatchesAgeRange(meta, age, now)) {
+    metas.push(meta)
+  }
+}
+
+router.get('/sessions', async (req, res) => {
+  const age = parseAgeRange(req.query.age)
   const now = Date.now()
-  if (sessionCache && now - cacheTime < CACHE_TTL) {
-    res.json(sessionCache)
+  const cached = sessionCache.get(age)
+  if (cached && now - cached.cacheTime < CACHE_TTL) {
+    res.json(cached.metas)
     return
   }
 
@@ -24,8 +71,10 @@ router.get('/sessions', async (_req, res) => {
   const claudeFiles = await listClaudeSessions()
   for (const filePath of claudeFiles) {
     try {
-      const m = await readClaudeMeta(filePath)
-      if (m && m.turnCount > 0) metas.push(m)
+      await pushMetaIfMatching(metas, filePath, age, now, async (path) => {
+        const meta = await readClaudeMeta(path)
+        return meta && meta.turnCount > 0 ? meta : null
+      })
     } catch { /* skip */ }
   }
 
@@ -33,34 +82,21 @@ router.get('/sessions', async (_req, res) => {
   const codexFiles = listCodexSessions()
   for (const filePath of codexFiles) {
     try {
-      const m = await readCodexMeta(filePath)
-      if (m) metas.push(m)
+      await pushMetaIfMatching(metas, filePath, age, now, readCodexMeta)
     } catch { /* skip */ }
   }
 
-  // Gemini — files are small JSON, full parse is fine
-  const geminiFiles = listGeminiSessions()
-  for (const filePath of geminiFiles) {
+  // Kimi Code — state.json + main wire event stream
+  const kimiFiles = listKimiSessions()
+  for (const files of kimiFiles) {
     try {
-      const session = parseGeminiSession(filePath)
-      if (!session) continue
-      metas.push({
-        id: session.id,
-        source: 'gemini',
-        startedAt: session.startedAt,
-        cwd: session.cwd,
-        projectPath: session.projectPath,
-        model: session.model,
-        turnCount: session.turns.length,
-        filePath: session.filePath,
-      })
+      await pushMetaIfMatching(metas, files.statePath, age, now, async () => readKimiMeta(files))
     } catch { /* skip */ }
   }
 
   metas.sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime())
 
-  sessionCache = metas
-  cacheTime = now
+  sessionCache.set(age, { metas, cacheTime: now })
   res.json(metas)
 })
 
@@ -79,6 +115,8 @@ router.get('/sessions/:id', async (req, res) => {
       session = await parseClaudeSession(filePath)
     } else if (source === 'codex') {
       session = await parseCodexSession(filePath)
+    } else if (source === 'kimi') {
+      session = await parseKimiSession(filePath)
     } else if (source === 'gemini') {
       session = parseGeminiSession(filePath)
     }

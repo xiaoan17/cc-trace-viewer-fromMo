@@ -20,14 +20,14 @@ npm run build
 
 ## Architecture
 
-**Full-stack TypeScript** project — an Express backend + React/Vite frontend — for browsing and comparing agent traces from Codex, Codex, and Gemini CLI.
+**Full-stack TypeScript** project — an Express backend + React/Vite frontend — for browsing and comparing agent traces from Claude Code, Codex, and Kimi Code.
 
 ### Data flow
 
 ```
-~/.Codex/projects/**/*.jsonl     ─┐
-~/.codex/sessions/**/*.jsonl      ─┤─► Parsers ─► Express API ─► React frontend
-~/.gemini/tmp/**/chats/*.json     ─┘
+~/.claude/projects/**/*.jsonl     ─┐
+~/.codex/sessions/**/*.jsonl      ─┤
+~/.kimi-code/sessions/**/state.json├─► Parsers ─► Express API ─► React frontend
 ```
 
 ### Unified schema (`src/shared/types.ts`)
@@ -38,19 +38,20 @@ All three formats are normalized into `TraceSession → TraceTurn[] → TraceSte
 
 - `index.ts` — Express entrypoint on port 3001
 - `api.ts` — `GET /api/sessions` (returns `SessionMeta[]`) and `GET /api/sessions/:id?source=&filePath=`
-- `parsers/Codex.ts` — walks `~/.Codex/projects/` JSONL files; reconstructs turns by following `parentUuid` linked list
+- `parsers/claude.ts` — walks `~/.claude/projects/` JSONL files; reconstructs turns by following `parentUuid` linked list
 - `parsers/codex.ts` — walks `~/.codex/sessions/` JSONL files; groups turns by `event_msg` `task_started`/`task_complete` boundaries
-- `parsers/gemini.ts` — reads `~/.gemini/tmp/` JSON chat files; turns are `user` message followed by `gemini` response with embedded `toolCalls[]`
+- `parsers/kimi.ts` — walks `~/.kimi-code/sessions/` state files; parses `agents/main/wire.jsonl` event streams
+- `parsers/gemini.ts` — legacy parser retained for Gemini chat files, but Gemini is not included in the default session list
 
 ### Frontend (`src/client/`)
 
 - `App.tsx` — two-column layout: `SessionList` (left) + `TraceViewer` (right)
 - `hooks/useSessions.ts` — `useSessions()` fetches session list; `useSession(meta)` fetches full session on demand
-- `components/SessionList.tsx` — filter by source (Codex/Codex/Gemini) + text search, grouped by source with counts
+- `components/SessionList.tsx` — filter by time range + source (Claude/Codex/Kimi) + text search, grouped by source with counts
 - `components/TraceViewer.tsx` — header with metadata + scrollable turn list
 - `components/TurnCard.tsx` — renders one turn: user bubble, collapsible steps, assistant response, token usage
 - `components/StepItem.tsx` — renders individual steps with type-specific styling (tool_use, tool_result, thinking, text)
-- `components/SourceBadge.tsx` — source color config (amber=Codex, sky=Codex, violet=Gemini)
+- `components/SourceBadge.tsx` — source color config (orange=Claude, blue=Codex, green=Kimi)
 
 ### Path alias
 

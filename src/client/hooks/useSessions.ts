@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react'
-import type { SessionMeta, TraceSession } from '@shared/types'
+import type { SessionAgeRange, SessionMeta, TraceSession } from '@shared/types'
 
-export function useSessions() {
+export function useSessions(ageRange: SessionAgeRange = '1d') {
   const [sessions, setSessions] = useState<SessionMeta[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     setLoading(true)
-    fetch('/api/sessions')
+    setError(null)
+    const params = new URLSearchParams({ age: ageRange })
+    fetch(`/api/sessions?${params}`)
       .then((r) => r.json())
       .then((data) => {
         setSessions(data)
@@ -18,7 +20,7 @@ export function useSessions() {
         setError(String(err))
         setLoading(false)
       })
-  }, [])
+  }, [ageRange])
 
   return { sessions, loading, error }
 }

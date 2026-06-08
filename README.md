@@ -4,14 +4,14 @@
   <img src="./public/logo.png" alt="Trace Viewer logo" width="180" />
 </p>
 
-A web-based viewer for browsing and comparing conversation traces from multiple coding agents: **Claude Code**, **Codex**, and **Gemini CLI**.
+A web-based viewer for browsing and comparing conversation traces from multiple coding agents: **Claude Code**, **Codex**, and **Kimi Code**.
 
 ![screenshot placeholder](./docs/screenshot.png)
 
 ## Features
 
-- Browse sessions from all three agents in a unified interface
-- Filter by source (Claude / Codex / Gemini) and search by project path
+- Browse sessions from all supported agents in a unified interface
+- Filter by time range and source (Claude / Codex / Kimi), and search by project path
 - Timeline view of each session: user messages, tool calls, tool results, thinking steps, and assistant responses
 - Full markdown rendering in message content
 - Token usage display per turn (where available)
@@ -23,7 +23,7 @@ A web-based viewer for browsing and comparing conversation traces from multiple 
 |--------|---------------|--------|
 | Claude Code | `~/.claude/projects/**/*.jsonl` | JSONL, `parentUuid` linked list |
 | Codex | `~/.codex/sessions/**/*.jsonl` | JSONL, event stream |
-| Gemini CLI | `~/.gemini/tmp/**/chats/*.json` | Single JSON file |
+| Kimi Code | `~/.kimi-code/sessions/**/state.json` + `agents/main/wire.jsonl` | JSON + JSONL event stream |
 
 ## Getting Started
 

@@ -1,4 +1,5 @@
-export type Source = 'claude' | 'codex' | 'gemini'
+export type Source = 'claude' | 'codex' | 'kimi' | 'gemini'
+export type SessionAgeRange = '1d' | '7d' | '30d' | 'older'
 
 export interface TraceSession {
   id: string

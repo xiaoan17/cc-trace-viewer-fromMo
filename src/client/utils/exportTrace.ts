@@ -31,6 +31,7 @@ export function exportAsHTML(session: TraceSession, meta: SessionMeta) {
 const SOURCE_COLORS: Record<string, { accent: string; badge: string }> = {
   claude: { accent: '#c2410c', badge: 'rgba(234,88,12,0.12)' },
   codex:  { accent: '#1d4ed8', badge: 'rgba(29,78,216,0.10)' },
+  kimi:   { accent: '#111827', badge: 'rgba(17,24,39,0.10)' },
   gemini: { accent: '#6d28d9', badge: 'rgba(109,40,217,0.10)' },
 }
 

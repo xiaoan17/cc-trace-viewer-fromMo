@@ -47,6 +47,17 @@ export function SourceIcon({ source, className }: { source: Source; className?: 
     )
   }
 
+  if (source === 'kimi') {
+    return (
+      <img
+        src="/kimi-logo.png"
+        alt=""
+        className={className}
+        aria-hidden="true"
+      />
+    )
+  }
+
   return (
     <svg
       aria-hidden="true"

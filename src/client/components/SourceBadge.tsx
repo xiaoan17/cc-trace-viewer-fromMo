@@ -27,6 +27,14 @@ const CONFIGS: Record<Source, SourceConfig> = {
     badgeBorder: 'rgba(29,78,216,0.2)',
     glow: 'rgba(29,78,216,0.1)',
   },
+  kimi: {
+    label: 'Kimi Code',
+    color: '#2563eb',        // blue-600, matches the Kimi logo accent dot
+    textClass: 'text-blue-600',
+    badgeBg: 'rgba(37,99,235,0.07)',
+    badgeBorder: 'rgba(37,99,235,0.20)',
+    glow: 'rgba(37,99,235,0.10)',
+  },
   gemini: {
     label: 'Gemini CLI',
     color: '#6d28d9',        // violet-700
