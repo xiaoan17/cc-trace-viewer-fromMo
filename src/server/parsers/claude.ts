@@ -282,6 +282,13 @@ function summarizeSystemRecord(record: ClaudeRecord): { name: string; text: stri
     return { name: subtype, text: 'File history snapshot updated.' }
   }
 
+  if (subtype === 'away_summary') {
+    return {
+      name: subtype,
+      text: record.content || 'Away summary updated.',
+    }
+  }
+
   return {
     name: subtype,
     text: stringifyUnknown(record),
@@ -352,7 +359,13 @@ export async function readClaudeMeta(filePath: string): Promise<SessionMeta | nu
           }
         }
 
-        if (obj.type === 'assistant' || obj.type === 'system' || obj.type === 'queue-operation') {
+        if (
+          obj.type === 'assistant' ||
+          obj.type === 'system' ||
+          obj.type === 'queue-operation' ||
+          obj.type === 'attachment' ||
+          obj.type === 'file-history-snapshot'
+        ) {
           eventCount++
         }
 
@@ -472,7 +485,13 @@ export async function parseClaudeSession(filePath: string): Promise<TraceSession
     const startedAt = recs.find((r) => r.timestamp)?.timestamp || ''
     const projectPath = filePath.split('/projects/')[1]?.split('/')[0]?.replace(/-/g, '/')
     const model = recs.find((r) => r.type === 'assistant' && r.message?.model)?.message?.model as string | undefined
-    const eventCount = recs.filter((r) => r.type === 'assistant' || r.type === 'system' || r.type === 'queue-operation').length
+    const eventCount = recs.filter((r) =>
+      r.type === 'assistant' ||
+      r.type === 'system' ||
+      r.type === 'queue-operation' ||
+      r.type === 'attachment' ||
+      r.type === 'file-history-snapshot'
+    ).length
     const toolCallCount = recs.reduce((count, record) => {
       if (record.type !== 'assistant' || !Array.isArray(record.message?.content)) return count
       return count + record.message.content.filter((item) => {
@@ -648,6 +667,26 @@ export async function parseClaudeSession(filePath: string): Promise<TraceSession
           if (taskNotification) {
             steps.push(toTaskStep(taskNotification, record.uuid || `queue-${steps.length}`))
           }
+          continue
+        }
+
+        if (record.type === 'attachment') {
+          steps.push({
+            id: record.uuid || `attachment-${steps.length}`,
+            type: 'system',
+            name: 'attachment',
+            text: stringifyUnknown((record as unknown as { attachment?: unknown }).attachment),
+          })
+          continue
+        }
+
+        if (record.type === 'file-history-snapshot') {
+          steps.push({
+            id: record.uuid || `file-history-${steps.length}`,
+            type: 'system',
+            name: 'file-history-snapshot',
+            text: 'File history snapshot updated.',
+          })
           continue
         }
 

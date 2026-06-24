@@ -117,6 +117,34 @@ describe('parseCodexSession', () => {
     expect(turn.tokenUsage).toEqual({ input: 100, output: 50, cached: 10, total: 150 })
   })
 
+  it('parses current Codex tool search, web search, patch, and abort events', async () => {
+    const f = tmp([
+      sessionMeta(),
+      eventMsg('task_started', { turn_id: 'turn-1' }, TS_START),
+      eventMsg('user_message', { message: 'Update trace parser' }, TS_START),
+      responseItem({ type: 'tool_search_call', call_id: 'search-1', arguments: { query: 'subagent' }, status: 'completed' }, TS_START),
+      responseItem({ type: 'tool_search_output', call_id: 'search-1', tools: [{ name: 'spawn_agent' }], status: 'completed' }, TS_START),
+      responseItem({ type: 'web_search_call', id: 'web-1', action: 'search', status: 'completed' }, TS_START),
+      responseItem({ type: 'web_search_end', call_id: 'web-1', action: 'search', query: 'Codex trace jsonl' }, TS_START),
+      responseItem({ type: 'custom_tool_call', name: 'apply_patch', input: '*** Begin Patch', call_id: 'patch-1' }, TS_START),
+      responseItem({ type: 'patch_apply_end', call_id: 'patch-1', status: 'completed', success: true, changes: { modified: ['src/server/parsers/codex.ts'] }, stdout: 'ok', stderr: '' }, TS_START),
+      responseItem({ type: 'custom_tool_call_output', call_id: 'patch-1', output: 'Done' }, TS_START),
+      eventMsg('turn_aborted', { turn_id: 'turn-1', reason: 'user_interrupted', duration_ms: 12 }, TS_START),
+    ])
+
+    const meta = await readCodexMeta(f)
+    expect(meta!.toolCallCount).toBe(3)
+
+    const session = await parseCodexSession(f)
+    expect(session).not.toBeNull()
+    const turn = session!.turns[0]
+    expect(turn.steps.some((step) => step.type === 'tool_use' && step.name === 'tool_search')).toBe(true)
+    expect(turn.steps.some((step) => step.type === 'tool_result' && step.callId === 'search-1' && step.output?.includes('spawn_agent'))).toBe(true)
+    expect(turn.steps.some((step) => step.type === 'tool_use' && step.name === 'web_search')).toBe(true)
+    expect(turn.steps.some((step) => step.type === 'tool_result' && step.callId === 'patch-1' && step.output?.includes('modified'))).toBe(true)
+    expect(turn.steps.some((step) => step.type === 'system' && step.name === 'turn_aborted' && step.isError)).toBe(true)
+  })
+
   it('returns null when session_meta is missing', async () => {
     const f = tmp([eventMsg('task_started', { turn_id: 't1' })])
     expect(await parseCodexSession(f)).toBeNull()

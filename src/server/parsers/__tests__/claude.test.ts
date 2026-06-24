@@ -52,6 +52,10 @@ function queueOperationMsg(uuid: string, parentUuid: string, content: string, op
   return { type: 'queue-operation', uuid, parentUuid, operation, content }
 }
 
+function attachmentMsg(uuid: string, parentUuid: string, attachment: object) {
+  return { type: 'attachment', uuid, parentUuid, attachment, sessionId: SESSION_ID, timestamp: TS }
+}
+
 // ── readClaudeMeta ────────────────────────────────────────────────────────────
 
 describe('readClaudeMeta', () => {
@@ -309,6 +313,27 @@ describe('parseClaudeSession', () => {
     expect(session!.turns[0].steps.some((step) => step.type === 'system' && step.name === 'task_failed' && step.callId === 'call_95a71e7ed5dc4391a0fb3734')).toBe(true)
     expect(session!.turns[0].steps.some((step) => step.text?.includes('Background command "Monitor progress every 30s for 5 minutes" failed with exit code 144'))).toBe(true)
     expect(session!.turns[0].assistantMessage).toBe('The background task failed.')
+  })
+
+  it('keeps current Claude attachment, file history, and away summary records visible', async () => {
+    const f = tmp([
+      baseRecord(),
+      userMsg('u1', 'root', 'Review current context'),
+      attachmentMsg('att1', 'u1', { type: 'selected_files', addedLines: 2 }),
+      { type: 'file-history-snapshot', uuid: 'fh1', parentUuid: 'att1', sessionId: SESSION_ID, timestamp: TS, isSnapshotUpdate: true },
+      systemMsg('away1', 'fh1', 'away_summary', { content: 'User was away while work continued.' }),
+      assistantMsg('a1', 'away1', [{ type: 'text', text: 'Context reviewed.' }]),
+    ])
+
+    const meta = await readClaudeMeta(f)
+    expect(meta!.eventCount).toBe(4)
+
+    const session = await parseClaudeSession(f)
+    expect(session).not.toBeNull()
+    const steps = session!.turns[0].steps
+    expect(steps.some((step) => step.type === 'system' && step.name === 'attachment' && step.text?.includes('selected_files'))).toBe(true)
+    expect(steps.some((step) => step.type === 'system' && step.name === 'file-history-snapshot')).toBe(true)
+    expect(steps.some((step) => step.type === 'system' && step.name === 'away_summary' && step.text?.includes('User was away'))).toBe(true)
   })
 
   it('returns null for empty / sessionId-less file', async () => {

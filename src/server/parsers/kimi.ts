@@ -36,6 +36,8 @@ type KimiRecord = {
   modelAlias?: string
   model?: string
   input?: unknown
+  key?: string
+  value?: unknown
   usage?: KimiUsage
   message?: {
     role?: string
@@ -62,6 +64,7 @@ type KimiSessionFiles = {
   sessionDir: string
   statePath: string
   wirePath: string
+  agentWirePaths: string[]
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -153,6 +156,16 @@ function getMainWirePath(sessionDir: string): string {
   return path.join(sessionDir, 'agents', 'main', 'wire.jsonl')
 }
 
+function getAgentWirePaths(sessionDir: string): string[] {
+  const agentsDir = path.join(sessionDir, 'agents')
+  if (!fs.existsSync(agentsDir)) return []
+
+  return fs.readdirSync(agentsDir)
+    .map((entry) => path.join(agentsDir, entry, 'wire.jsonl'))
+    .filter((wirePath) => wirePath !== getMainWirePath(sessionDir) && fs.existsSync(wirePath))
+    .sort()
+}
+
 function readIndex(): Map<string, KimiIndexRecord> {
   const bySessionDir = new Map<string, KimiIndexRecord>()
   if (!fs.existsSync(KIMI_INDEX_FILE)) return bySessionDir
@@ -199,7 +212,7 @@ export function listKimiSessions(): KimiSessionFiles[] {
       const sessionDir = path.dirname(full)
       const wirePath = getMainWirePath(sessionDir)
       if (fs.existsSync(wirePath)) {
-        files.push({ sessionDir, statePath: full, wirePath })
+        files.push({ sessionDir, statePath: full, wirePath, agentWirePaths: getAgentWirePaths(sessionDir) })
       }
     }
   }
@@ -208,28 +221,31 @@ export function listKimiSessions(): KimiSessionFiles[] {
   return files
 }
 
-async function readKimiStats(wirePath: string): Promise<{ turnCount: number; eventCount: number; toolCallCount: number }> {
+async function readKimiStats(wirePaths: string[]): Promise<{ turnCount: number; eventCount: number; toolCallCount: number }> {
   let count = 0
   let eventCount = 0
   let toolCallCount = 0
-  const rl = createInterface({ input: fs.createReadStream(wirePath), crlfDelay: Infinity })
-  for await (const line of rl) {
-    const trimmed = line.trim()
-    if (!trimmed) continue
-    try {
-      const record = JSON.parse(trimmed) as KimiRecord
-      if (record.type === 'turn.prompt' && extractText(record.input).trim()) {
-        count++
+  for (const wirePath of wirePaths) {
+    const isMain = wirePath.endsWith(path.join('main', 'wire.jsonl'))
+    const rl = createInterface({ input: fs.createReadStream(wirePath), crlfDelay: Infinity })
+    for await (const line of rl) {
+      const trimmed = line.trim()
+      if (!trimmed) continue
+      try {
+        const record = JSON.parse(trimmed) as KimiRecord
+        if (isMain && record.type === 'turn.prompt' && extractText(record.input).trim()) {
+          count++
+        }
+        if (record.type === 'context.append_loop_event' && record.event) {
+          eventCount++
+          if (record.event.type === 'tool.call') toolCallCount++
+        }
+      } catch {
+        // skip malformed rows
       }
-      if (record.type === 'context.append_loop_event' && record.event) {
-        eventCount++
-        if (record.event.type === 'tool.call') toolCallCount++
-      }
-    } catch {
-      // skip malformed rows
     }
+    rl.close()
   }
-  rl.close()
   return { turnCount: count, eventCount, toolCallCount }
 }
 
@@ -239,7 +255,7 @@ export async function readKimiMeta(files: KimiSessionFiles): Promise<SessionMeta
 
   const index = readIndex().get(files.sessionDir)
   const id = index?.sessionId || getSessionId(files.sessionDir)
-  const { turnCount, eventCount, toolCallCount } = await readKimiStats(files.wirePath)
+  const { turnCount, eventCount, toolCallCount } = await readKimiStats([files.wirePath, ...files.agentWirePaths])
   if (turnCount === 0) return null
   const title = makeSessionTitle(state.title || state.lastPrompt)
 
@@ -291,9 +307,10 @@ export async function parseKimiSession(statePath: string): Promise<TraceSession 
   const index = readIndex().get(sessionDir)
   const id = index?.sessionId || getSessionId(sessionDir)
   const model = await readKimiModel(wirePath)
-  const turns = await parseKimiTurns(wirePath)
+  const agentWirePaths = getAgentWirePaths(sessionDir)
+  const turns = await parseKimiTurns(wirePath, agentWirePaths)
   if (turns.length === 0) return null
-  const stats = await readKimiStats(wirePath)
+  const stats = await readKimiStats([wirePath, ...agentWirePaths])
   const title = makeSessionTitle(state.title || turns[0]?.userMessage || state.lastPrompt)
 
   return {
@@ -312,7 +329,7 @@ export async function parseKimiSession(statePath: string): Promise<TraceSession 
   }
 }
 
-async function parseKimiTurns(wirePath: string): Promise<TraceTurn[]> {
+async function parseKimiTurns(wirePath: string, agentWirePaths: string[] = []): Promise<TraceTurn[]> {
   const turns: TraceTurn[] = []
   let current: TraceTurn | null = null
   let currentTurnId = ''
@@ -356,6 +373,29 @@ async function parseKimiTurns(wirePath: string): Promise<TraceTurn[]> {
     }
 
     if (!current) continue
+
+    if (record.type === 'turn.steer') {
+      const text = extractText(record.input).trim()
+      if (text) {
+        current.steps.push({
+          id: `steer-${current.steps.length}`,
+          type: 'system',
+          name: 'turn_steer',
+          text,
+        })
+      }
+      continue
+    }
+
+    if (record.type === 'tools.update_store') {
+      current.steps.push({
+        id: `tools-store-${current.steps.length}`,
+        type: 'system',
+        name: `tools_update_store:${record.key || 'unknown'}`,
+        text: stringifyUnknown(record.value),
+      })
+      continue
+    }
 
     if (record.type === 'usage.record' && record.usage) {
       current.tokenUsage = mergeUsage(current.tokenUsage, record.usage)
@@ -425,5 +465,49 @@ async function parseKimiTurns(wirePath: string): Promise<TraceTurn[]> {
   rl.close()
   finishCurrent()
 
+  appendAgentSummaries(turns, agentWirePaths)
+
   return turns
+}
+
+function appendAgentSummaries(turns: TraceTurn[], agentWirePaths: string[]) {
+  if (turns.length === 0) return
+  const targetTurn = turns[turns.length - 1]
+
+  for (const wirePath of agentWirePaths) {
+    let prompt = ''
+    let eventCount = 0
+    let toolCallCount = 0
+    let model = ''
+    try {
+      const lines = fs.readFileSync(wirePath, 'utf-8').split(/\r?\n/)
+      for (const line of lines) {
+        const trimmed = line.trim()
+        if (!trimmed) continue
+        const record = JSON.parse(trimmed) as KimiRecord
+        if (!model && record.type === 'config.update' && record.modelAlias) model = record.modelAlias
+        if (!prompt && record.type === 'turn.prompt') prompt = extractText(record.input).trim()
+        if (record.type === 'context.append_loop_event' && record.event) {
+          eventCount++
+          if (record.event.type === 'tool.call') toolCallCount++
+        }
+      }
+    } catch {
+      continue
+    }
+
+    targetTurn.steps.push({
+      id: `agent-${path.basename(path.dirname(wirePath))}`,
+      type: 'system',
+      name: 'subagent_trace',
+      text: [
+        `Agent: ${path.basename(path.dirname(wirePath))}`,
+        model ? `Model: ${model}` : '',
+        prompt ? `Prompt: ${prompt}` : '',
+        `Events: ${eventCount}`,
+        `Tool calls: ${toolCallCount}`,
+        `Trace: ${wirePath}`,
+      ].filter(Boolean).join('\n'),
+    })
+  }
 }

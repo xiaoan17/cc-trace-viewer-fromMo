@@ -6,6 +6,66 @@ import type { TraceSession, TraceTurn, TraceStep, TokenUsage, SessionMeta } from
 import { makeSessionTitle } from './sessionTitle.js'
 
 const CODEX_DIR = path.join(os.homedir(), '.codex', 'sessions')
+const TOOL_CALL_TYPES = new Set([
+  'function_call',
+  'custom_tool_call',
+  'web_search_call',
+  'tool_search_call',
+])
+
+function stringifyUnknown(value: unknown): string {
+  if (value == null) return ''
+  if (typeof value === 'string') return value
+  try {
+    return JSON.stringify(value, null, 2)
+  } catch {
+    return String(value)
+  }
+}
+
+function parseInput(value: unknown): Record<string, unknown> | undefined {
+  if (value == null) return undefined
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value) as unknown
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+        ? parsed as Record<string, unknown>
+        : { value: parsed }
+    } catch {
+      return { raw: value }
+    }
+  }
+  if (typeof value === 'object' && !Array.isArray(value)) return value as Record<string, unknown>
+  return { value }
+}
+
+function extractMessageText(content: unknown): string {
+  if (typeof content === 'string') return content
+  if (!Array.isArray(content)) return ''
+  return content
+    .map((item) => {
+      if (typeof item === 'string') return item
+      if (!item || typeof item !== 'object') return ''
+      const block = item as Record<string, unknown>
+      if (typeof block.text === 'string') return block.text
+      if (typeof block.content === 'string') return block.content
+      return ''
+    })
+    .filter(Boolean)
+    .join('\n')
+}
+
+function formatPatchApplyOutput(payload: Record<string, unknown>): string {
+  const parts: string[] = []
+  if (typeof payload.stdout === 'string' && payload.stdout.trim()) parts.push(`stdout:\n${payload.stdout}`)
+  if (typeof payload.stderr === 'string' && payload.stderr.trim()) parts.push(`stderr:\n${payload.stderr}`)
+  if (typeof payload.status === 'string') parts.push(`status: ${payload.status}`)
+  if (typeof payload.success === 'boolean') parts.push(`success: ${payload.success}`)
+  if (payload.changes && typeof payload.changes === 'object') {
+    parts.push(`changes:\n${stringifyUnknown(payload.changes)}`)
+  }
+  return parts.join('\n\n')
+}
 
 /** Fast meta-only read: reads first few lines for session_meta + counts task_started events */
 export async function readCodexMeta(filePath: string): Promise<SessionMeta | null> {
@@ -42,11 +102,7 @@ export async function readCodexMeta(filePath: string): Promise<SessionMeta | nul
         }
         if (obj.type === 'response_item') {
           eventCount++
-          if (
-            obj.payload?.type === 'function_call' ||
-            obj.payload?.type === 'custom_tool_call' ||
-            obj.payload?.type === 'web_search_call'
-          ) {
+          if (TOOL_CALL_TYPES.has(obj.payload?.type)) {
             toolCallCount++
           }
         }
@@ -97,12 +153,7 @@ export async function parseCodexSession(filePath: string): Promise<TraceSession 
     const model = metaRecord.payload?.model_provider as string
     const eventCount = recs.filter((r) => r.type === 'response_item').length
     const toolCallCount = recs.filter((r) =>
-      r.type === 'response_item' &&
-      (
-        r.payload?.type === 'function_call' ||
-        r.payload?.type === 'custom_tool_call' ||
-        r.payload?.type === 'web_search_call'
-      )
+      r.type === 'response_item' && TOOL_CALL_TYPES.has(r.payload?.type)
     ).length
 
     // Group records into turns using event_msg task_started/task_complete
@@ -165,10 +216,29 @@ export async function parseCodexSession(filePath: string): Promise<TraceSession 
             type: 'tool_use',
             callId,
             name: payload.name,
-            input:
-              typeof payload.arguments === 'string'
-                ? (() => { try { return JSON.parse(payload.arguments) } catch { return { raw: payload.arguments } } })()
-                : payload.arguments || payload.input,
+            input: parseInput(payload.arguments ?? payload.input),
+          })
+        }
+
+        if (payload.type === 'tool_search_call') {
+          const callId = payload.call_id || `call-${steps.length}`
+          steps.push({
+            id: `tool-${callId}`,
+            type: 'tool_use',
+            callId,
+            name: 'tool_search',
+            input: parseInput(payload.arguments),
+          })
+        }
+
+        if (payload.type === 'web_search_call') {
+          const callId = payload.id || payload.call_id || `call-${steps.length}`
+          steps.push({
+            id: `tool-${callId}`,
+            type: 'tool_use',
+            callId,
+            name: 'web_search',
+            input: parseInput({ action: payload.action, status: payload.status }),
           })
         }
 
@@ -179,10 +249,39 @@ export async function parseCodexSession(filePath: string): Promise<TraceSession 
             id: `result-${callId}`,
             type: 'tool_result',
             callId,
-            output:
-              typeof payload.output === 'string'
-                ? payload.output
-                : JSON.stringify(payload.output),
+            output: stringifyUnknown(payload.output),
+          })
+        }
+
+        if (payload.type === 'tool_search_output') {
+          const callId = payload.call_id || `call-${steps.length}`
+          steps.push({
+            id: `result-${callId}`,
+            type: 'tool_result',
+            callId,
+            output: stringifyUnknown(payload.tools),
+            isError: payload.status === 'failed',
+          })
+        }
+
+        if (payload.type === 'web_search_end') {
+          const callId = payload.call_id || `call-${steps.length}`
+          steps.push({
+            id: `result-${callId}`,
+            type: 'tool_result',
+            callId,
+            output: stringifyUnknown({ action: payload.action, query: payload.query }),
+          })
+        }
+
+        if (payload.type === 'patch_apply_end') {
+          const callId = payload.call_id || `call-${steps.length}`
+          steps.push({
+            id: `result-${callId}-patch`,
+            type: 'tool_result',
+            callId,
+            output: formatPatchApplyOutput(payload),
+            isError: payload.success === false || payload.status === 'failed',
           })
         }
 
@@ -192,11 +291,23 @@ export async function parseCodexSession(filePath: string): Promise<TraceSession 
             .map((s: { text?: string }) => s.text || '')
             .filter(Boolean)
             .join('\n')
-          if (summaryText) {
+          const text = summaryText || (typeof payload.content === 'string' ? payload.content : '')
+          if (text) {
             steps.push({
               id: `reasoning-${steps.length}`,
               type: 'thinking',
-              text: summaryText,
+              text,
+            })
+          }
+        }
+
+        if (payload.type === 'message' && payload.role === 'assistant') {
+          const text = extractMessageText(payload.content)
+          if (text.trim()) {
+            steps.push({
+              id: `message-${steps.length}`,
+              type: 'text',
+              text,
             })
           }
         }
@@ -236,6 +347,22 @@ export async function parseCodexSession(filePath: string): Promise<TraceSession 
           cached: u.cached_input_tokens,
           total: u.total_tokens,
         }
+      }
+
+      const abortedEvent = turnEvents.find((e) => e.payload?.type === 'turn_aborted')
+      if (abortedEvent?.payload?.reason) {
+        steps.push({
+          id: `turn-aborted-${steps.length}`,
+          type: 'system',
+          name: 'turn_aborted',
+          text: [
+            `Reason: ${abortedEvent.payload.reason}`,
+            typeof abortedEvent.payload.duration_ms === 'number'
+              ? `Duration: ${abortedEvent.payload.duration_ms} ms`
+              : '',
+          ].filter(Boolean).join('\n'),
+          isError: true,
+        })
       }
 
       turns.push({

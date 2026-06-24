@@ -222,7 +222,7 @@ export function ToolPairItem({ toolUse, toolResult }: { toolUse: TraceStep; tool
             ? (isErr ? 'bg-accent-error/15 border-accent-error/20 text-accent-error' : 'bg-accent-success/15 border-accent-success/20 text-accent-success')
             : 'bg-surface-3 border-border-2 text-text-4'
         }`}>
-          {toolResult ? (isErr ? 'FAILED' : 'PENDING') : 'PENDING'}
+          {toolResult ? (isErr ? 'FAILED' : 'DONE') : 'PENDING'}
         </div>
         <Chevron open={open} className="text-text-4 opacity-70" />
       </button>
